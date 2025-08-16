@@ -1,15 +1,27 @@
 import React, { useState, useEffect } from 'react'
-
+import Masonry from 'react-masonry-css'
 import GalleryManager from '@/tina/fields/galleryManager'
 
-export const AutoGallery = ({ data }) => {
-  // Debug: Log the incoming data
-  console.log('AutoGallery received data:', data)
-  console.log('Images array:', data?.images)
-  
+// Add CSS for masonry (put this in your global CSS or component)
+const masonryStyles = `
+  .masonry-grid {
+    display: flex;
+    margin-left: -16px; /* gutter size offset */
+    width: auto;
+  }
+  .masonry-grid-column {
+    padding-left: 16px; /* gutter size */
+    background-clip: padding-box;
+  }
+  .masonry-grid-column > div {
+    margin-bottom: 16px;
+  }
+`
+
+export const AutoGallery = ({ data }: any) => {
   const {
     folderPath,
-    images: savedImages = [], // Images with captions from CMS
+    images: savedImages = [],
     layout = 'masonry',
     columns = 'three',
     gap = 'medium',
@@ -24,17 +36,10 @@ export const AutoGallery = ({ data }) => {
     loadGalleryImages()
   }, [folderPath, savedImages])
 
-  const loadGalleryImages = async () => {
-    console.log('loadGalleryImages called')
-    console.log('savedImages:', savedImages)
-    console.log('folderPath:', folderPath)
-    
+  const loadGalleryImages = async () => {   
     // If we have saved images with paths, use those directly
     if (savedImages && savedImages.length > 0) {
-      console.log('Using saved images from CMS:', savedImages)
-      // Make sure each image has a path
-      const validImages = savedImages.filter(img => img.path || img.url)
-      console.log('Valid images with paths:', validImages)
+      const validImages = savedImages.filter((img: any) => img.path || img.url)
       
       if (validImages.length > 0) {
         setGalleryImages(validImages)
@@ -45,17 +50,14 @@ export const AutoGallery = ({ data }) => {
 
     // Otherwise, fetch from folder
     if (folderPath) {
-      console.log('No saved images, loading from folder:', folderPath)
       setLoading(true)
       try {
         const response = await fetch(`/api/scan-folder?folder=${encodeURIComponent(folderPath)}`)
         const data = await response.json()
-        console.log('API response:', data)
         
         if (data.images && data.images.length > 0) {
           setGalleryImages(data.images)
         } else {
-          console.log('No images found in API response')
           setGalleryImages([])
         }
       } catch (error) {
@@ -65,22 +67,47 @@ export const AutoGallery = ({ data }) => {
         setLoading(false)
       }
     } else {
-      console.log('No folder path provided')
       setLoading(false)
     }
   }
 
+  // Breakpoints for react-masonry-css
+  const breakpointColumns = {
+    two: {
+      default: 2,
+      768: 1,
+    },
+    three: {
+      default: 3,
+      1024: 2,
+      768: 1,
+    },
+    four: {
+      default: 4,
+      1024: 3,
+      768: 2,
+      640: 1,
+    },
+  }
 
-  const columnClasses = {
-    two: layout === 'masonry' ? 'columns-1 md:columns-2' : 'grid grid-cols-1 md:grid-cols-2',
-    three: layout === 'masonry' ? 'columns-1 md:columns-2 lg:columns-3' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
-    four: layout === 'masonry' ? 'columns-1 md:columns-2 lg:columns-4' : 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
+  // For grid layout (non-masonry)
+  const gridClasses = {
+    two: 'grid grid-cols-1 md:grid-cols-2',
+    three: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
+    four: 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
   }
 
   const gapClasses = {
-    small: layout === 'masonry' ? 'gap-2' : 'gap-2',
-    medium: layout === 'masonry' ? 'gap-4' : 'gap-4',
-    large: layout === 'masonry' ? 'gap-6' : 'gap-6',
+    small: 'gap-2',
+    medium: 'gap-4',
+    large: 'gap-6',
+  }
+
+  // Adjust masonry gap via CSS variable
+  const masonryGutters = {
+    small: 8,
+    medium: 16,
+    large: 24,
   }
 
   if (loading) {
@@ -108,54 +135,75 @@ export const AutoGallery = ({ data }) => {
     )
   }
 
-  console.log('Rendering', galleryImages.length, 'images')
+  const imageElements = galleryImages.map((image: any, index: number) => (
+    <div
+      key={image.filename || index}
+      className={`group relative overflow-hidden rounded-lg bg-gray-100 cursor-pointer ${
+        layout === 'grid' ? 'aspect-square' : ''
+      }`}
+      onClick={() => lightbox && setSelectedImage(image)}
+    >
+      <img
+        src={image.path}
+        alt={image.alt || image.caption || `Gallery image ${index + 1}`}
+        className={`
+          w-full transition-transform duration-300 group-hover:scale-105
+          ${layout === 'grid' 
+            ? 'h-full object-cover' 
+            : 'h-auto object-cover block'
+          }
+        `}
+        onError={(e: any) => {
+          console.error(`Failed to load image: ${image.path}`)
+        }}
+      />
+      
+      {/* Caption Overlay */}
+      {image.caption && (
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+          <p className="text-white text-sm font-medium">{image.caption}</p>
+          {image.tags && image.tags.length > 0 && (
+            <div className="flex gap-1 mt-1">
+              {image.tags.map((tag: string) => (
+                <span key={tag} className="text-xs text-white/70">#{tag}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  ))
 
   return (
     <>
-      <div className={`${columnClasses[columns]} ${gapClasses[gap]}`}>
-        {galleryImages.map((image, index) => (
-          <div
-            key={image.filename || index}
-            className={`group relative overflow-hidden rounded-lg bg-gray-100 cursor-pointer ${
-              layout === 'grid' 
-                ? 'aspect-square' 
-                : layout === 'masonry'
-                ? 'mb-4 break-inside-avoid'
-                : ''
-            }`}
-            onClick={() => lightbox && setSelectedImage(image)}
-          >
-            <img
-              src={image.path}
-              alt={image.alt || image.caption || `Gallery image ${index + 1}`}
-              className={`
-                w-full transition-transform duration-300 group-hover:scale-105
-                ${layout === 'grid' 
-                  ? 'h-full object-cover' 
-                  : 'h-auto object-cover block'
-                }
-              `}
-              onError={(e) => {
-                console.error(`Failed to load image: ${image.path}`)
-              }}
-            />
-            
-            {/* Caption Overlay */}
-            {image.caption && (
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                <p className="text-white text-sm font-medium">{image.caption}</p>
-                {image.tags && image.tags.length > 0 && (
-                  <div className="flex gap-1 mt-1">
-                    {image.tags.map(tag => (
-                      <span key={tag} className="text-xs text-white/70">#{tag}</span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+      <style>{`
+        .masonry-grid {
+          display: flex;
+          margin-left: -${masonryGutters[gap]}px;
+          width: auto;
+        }
+        .masonry-grid-column {
+          padding-left: ${masonryGutters[gap]}px;
+          background-clip: padding-box;
+        }
+        .masonry-grid-column > div {
+          margin-bottom: ${masonryGutters[gap]}px;
+        }
+      `}</style>
+
+      {layout === 'masonry' ? (
+        <Masonry
+          breakpointCols={breakpointColumns[columns]}
+          className="masonry-grid"
+          columnClassName="masonry-grid-column"
+        >
+          {imageElements}
+        </Masonry>
+      ) : (
+        <div className={`${gridClasses[columns]} ${gapClasses[gap]}`}>
+          {imageElements}
+        </div>
+      )}
 
       {/* Lightbox */}
       {lightbox && selectedImage && (
@@ -172,15 +220,15 @@ export const AutoGallery = ({ data }) => {
             </svg>
           </button>
           
-          <figure className="max-w-7xl" onClick={e => e.stopPropagation()}>
+          <figure className="max-w-7xl" onClick={(e: any) => e.stopPropagation()}>
             <img
-              src={selectedImage.path}
-              alt={selectedImage.alt || selectedImage.caption}
+              src={(selectedImage as any).path}
+              alt={(selectedImage as any).alt || (selectedImage as any).caption}
               className="max-w-full max-h-[80vh] object-contain"
             />
-            {selectedImage.caption && (
+            {(selectedImage as any).caption && (
               <figcaption className="text-white text-center mt-4">
-                {selectedImage.caption}
+                {(selectedImage as any).caption}
               </figcaption>
             )}
           </figure>
@@ -189,6 +237,7 @@ export const AutoGallery = ({ data }) => {
     </>
   )
 }
+
 export const AutoDetectGallerySchema = {
   name: 'autoGallery',
   label: 'Smart Gallery',
