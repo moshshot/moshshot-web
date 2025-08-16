@@ -8,6 +8,9 @@ import { Video } from "./video";
 import { Callout } from "./callout";
 import { Stats } from "./stats";
 import { CallToAction } from "./call-to-action";
+import { HeroBG } from "./heroBG";
+import { ImageGallery } from "./imageGallery";
+import { AutoGallery } from "./autoGallery";
 
 export const Blocks = (props: Omit<Page, "id" | "_sys" | "_values">) => {
   if (!props.blocks) return null;
@@ -42,6 +45,12 @@ const Block = (block: PageBlocks) => {
       return <Testimonial data={block} />;
     case "PageBlocksCta":
       return <CallToAction data={block} />;
+    case "PageBlocksHeroBG":
+      return <HeroBG data={block} />;
+    case "PageBlocksImageGallery":
+      return <ImageGallery data={block} />;
+    case "PageBlocksAutoGallery":
+      return <AutoGallery data={block} />;
     default:
       return null;
   }

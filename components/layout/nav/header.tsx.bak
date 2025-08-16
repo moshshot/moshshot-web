@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { Icon } from "../../icon";
 import { useLayout } from "../layout-context";
 import { Menu, X } from "lucide-react";
 
@@ -22,17 +23,17 @@ export const Header = () => {
                 href="/"
                 aria-label="home"
                 className="flex items-center space-x-2">
-                {header.logo ? (
-                  <img 
-                    src={header.logo}
-                    alt={header.name || "Logo"}
-                    className="h-8 w-auto object-contain"
-                  />
-                ) : (
-                  <span className="font-semibold">
-                    {header.name}
-                  </span>
-                )}
+                <Icon
+                  parentColor={header.color!}
+                  data={{
+                    name: header.icon!.name,
+                    color: header.icon!.color,
+                    style: header.icon!.style,
+                  }}
+                />{" "}
+                <span>
+                  {header.name}
+                </span>
               </Link>
 
               <button

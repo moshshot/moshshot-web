@@ -15,17 +15,22 @@ export const Footer = () => {
 
           <div className="order-last flex justify-center md:order-first md:justify-start">
             <Link href="/" aria-label="go home">
-              <Icon
-                parentColor={header!.color!}
-                data={header!.icon}
-              />
+              {header?.logo ? (
+                <img 
+                  src={header.logo}
+                  alt={header.name || "Logo"}
+                  className="h-6 w-auto object-contain"
+                />
+              ) : (
+                <span className="font-semibold">{header?.name}</span>
+              )}
             </Link>
             <span className="self-center text-muted-foreground text-sm ml-2">© {new Date().getFullYear()} {header?.name}, All rights reserved</span>
           </div>
 
           <div className="order-first flex justify-center gap-6 text-sm md:order-last md:justify-end">
             {footer?.social?.map((link, index) => (
-              <Link key={`${link!.icon}${index}`} href={link!.url!} target="_blank" rel="noopener noreferrer" >
+              <Link key={`${link!.icon?.name}${index}`} href={link!.url!} target="_blank" rel="noopener noreferrer" >
                 <Icon data={{ ...link!.icon, size: 'small' }} className="text-muted-foreground hover:text-primary block" />
               </Link>
             ))}

@@ -7,6 +7,10 @@ import { videoBlockSchema } from '@/components/blocks/video';
 import { calloutBlockSchema } from '@/components/blocks/callout';
 import { statsBlockSchema } from '@/components/blocks/stats';
 import { ctaBlockSchema } from '@/components/blocks/call-to-action';
+// 
+import { HeroBGSchema } from '@/components/blocks/heroBG';
+import { ImageGallerySchema } from '@/components/blocks/imageGallery';
+import { AutoDetectGallerySchema } from '@/components/blocks/autoGallery';
 
 const Page: Collection = {
   label: 'Pages',
@@ -32,6 +36,11 @@ const Page: Collection = {
         visualSelector: true,
       },
       templates: [
+        // 
+        HeroBGSchema,
+        ImageGallerySchema,
+        AutoDetectGallerySchema,
+        // 
         heroBlockSchema,
         calloutBlockSchema,
         featureBlockSchema,

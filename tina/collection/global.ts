@@ -1,7 +1,6 @@
 import type { Collection } from "tinacms";
 import { ColorPickerInput } from "../fields/color";
 import { iconSchema } from "../fields/icon";
-import { icon } from "mermaid/dist/rendering-util/rendering-elements/shapes/icon.js";
 
 const Global: Collection = {
   label: "Global",
@@ -17,11 +16,26 @@ const Global: Collection = {
       label: "Header",
       name: "header",
       fields: [
-        iconSchema as any,
+        {
+          type: "image",
+          label: "Logo",
+          name: "logo",
+          description: "Upload your logo image",
+        },
+        {
+          type: "number",
+          label: "Logo Height (px)",
+          name: "logoHeight",
+          description: "Height of the logo in pixels (default: 32)",
+          ui: {
+            component: "number",
+          },
+        },
         {
           type: "string",
           label: "Name",
           name: "name",
+          description: "Site name (displayed if no logo is uploaded)",
         },
         {
           type: "string",
