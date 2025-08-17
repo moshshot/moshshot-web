@@ -3,29 +3,15 @@
     "logo": "/uploads/moshshot-logo-w.svg",
     "logoHeight": 48,
     "name": "MOSHSHOT",
-    "color": "default",
-    "nav": [
-      {
-        "href": "/",
-        "label": "Home"
-      },
-      {
-        "href": "/about",
-        "label": "About"
-      },
-      {
-        "href": "/posts",
-        "label": "Blog"
-      }
-    ]
+    "color": "default"
   },
   "footer": {
     "social": [
       {
         "icon": {
           "name": "BiLogoLinkedinSquare",
-          "style": "float",
-          "color": "primary"
+          "color": "primary",
+          "style": "float"
         },
         "url": "https://www.linkedin.com/company/tinacms"
       }
