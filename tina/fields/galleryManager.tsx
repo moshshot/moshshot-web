@@ -178,7 +178,7 @@ const GalleryManager = ({ field, input, form }) => {
         </p>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-4 flex flex-col">
         {images.map((image, index) => (
           <div key={`${image.filename}-${index}`} className="border rounded-lg p-4 space-y-3">
             <div className="flex gap-4">
@@ -195,7 +195,7 @@ const GalleryManager = ({ field, input, form }) => {
               </div>
 
               {/* Caption Fields */}
-              <div className="flex-grow space-y-2">
+              <div className="flex-grow space-y-2 flex flex-col flex-wrap">
                 <div className="font-medium text-sm text-gray-700">
                   {image.filename}
                 </div>

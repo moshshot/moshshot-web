@@ -37,7 +37,6 @@ export const AutoGallery = ({ data }: any) => {
   }, [folderPath, savedImages])
 
   const loadGalleryImages = async () => {   
-    // If we have saved images with paths, use those directly
     if (savedImages && savedImages.length > 0) {
       const validImages = savedImages.filter((img: any) => img.path || img.url)
       
@@ -48,7 +47,6 @@ export const AutoGallery = ({ data }: any) => {
       }
     }
 
-    // Otherwise, fetch from folder
     if (folderPath) {
       setLoading(true)
       try {
@@ -71,7 +69,6 @@ export const AutoGallery = ({ data }: any) => {
     }
   }
 
-  // Breakpoints for react-masonry-css
   const breakpointColumns = {
     two: {
       default: 2,
@@ -90,7 +87,6 @@ export const AutoGallery = ({ data }: any) => {
     },
   }
 
-  // For grid layout (non-masonry)
   const gridClasses = {
     two: 'grid grid-cols-1 md:grid-cols-2',
     three: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
@@ -103,7 +99,6 @@ export const AutoGallery = ({ data }: any) => {
     large: 'gap-6',
   }
 
-  // Adjust masonry gap via CSS variable
   const masonryGutters = {
     small: 8,
     medium: 16,
@@ -158,7 +153,6 @@ export const AutoGallery = ({ data }: any) => {
         }}
       />
       
-      {/* Caption Overlay */}
       {image.caption && (
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
           <p className="text-white text-sm font-medium">{image.caption}</p>
@@ -205,7 +199,6 @@ export const AutoGallery = ({ data }: any) => {
         </div>
       )}
 
-      {/* Lightbox */}
       {lightbox && selectedImage && (
         <div
           className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
@@ -243,7 +236,7 @@ export const AutoDetectGallerySchema = {
   label: 'Smart Gallery',
   ui: {
     defaultItem: {
-      folderPath: '',  // Add default
+      folderPath: '',
       layout: 'masonry',
       columns: 'three',
       gap: 'medium',
@@ -257,7 +250,6 @@ export const AutoDetectGallerySchema = {
       label: 'Gallery Folder',
       name: 'folderPath',
       description: 'Path relative to /public (e.g., "gallery/portfolio")',
-      // REMOVED: required: true - this was causing the GraphQL error
     },
     {
       type: 'string',
