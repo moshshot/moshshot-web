@@ -180,7 +180,7 @@ const GalleryManager = ({ field, input, form }) => {
 
       <div className="space-y-4 flex flex-col">
         {images.map((image, index) => (
-          <div key={`${image.filename}-${index}`} className="border rounded-lg p-4 space-y-3">
+          <div key={`${image.filename}-${index}`} className="border rounded-lg py-4 space-y-3">
             <div className="flex gap-4">
               {/* Image Preview */}
               <div className="flex-shrink-0">
