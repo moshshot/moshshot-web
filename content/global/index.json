@@ -9,11 +9,19 @@
     "social": [
       {
         "icon": {
-          "name": "BiLogoLinkedinSquare",
-          "color": "primary",
+          "name": "BiLogoTiktok",
+          "color": "white",
           "style": "float"
         },
-        "url": "https://www.linkedin.com/company/tinacms"
+        "url": "https://www.tiktok.com/@moshshot"
+      },
+      {
+        "icon": {
+          "name": "BiLogoInstagram",
+          "color": "white",
+          "style": "float"
+        },
+        "url": "https://www.instagram.com/mosh_shot"
       }
     ]
   },

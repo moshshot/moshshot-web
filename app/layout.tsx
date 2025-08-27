@@ -30,8 +30,8 @@ const antonio = Antonio({
 });
 
 export const metadata: Metadata = {
-  title: "Tina",
-  description: "Tina Cloud Starter",
+  title: "MOSHSHOT",
+  description: "Concert Photography",
 };
 
 export default function RootLayout({
@@ -41,6 +41,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`dark ${cn(antonio.variable, fontSans.variable, nunito.variable, lato.variable)}`}>
+      <head>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+      </head>
       <body className="min-h-screen bg-background font-sans antialiased">
         <VideoDialogProvider>
           {children}
