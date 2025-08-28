@@ -30,6 +30,7 @@ export default function PostsClientPage(props: ClientPostProps) {
       id: post.id,
       published: formattedDate,
       title: post.title,
+      subtitle: post.subtitle,
       tags: post.tags?.map((tag) => tag?.tag?.name) || [],
       url: `/photography/${post._sys.breadcrumbs.join('/')}`,
       excerpt: post.excerpt,
@@ -44,26 +45,26 @@ export default function PostsClientPage(props: ClientPostProps) {
   return (
     <ErrorBoundary>
       <Section>
-        <div className="container py-20 flex flex-col items-center gap-16">
+        <div className="container py-20 flex flex-col items-center m-auto">
           <div className="grid gap-y-2 sm:grid-cols-12 md:gap-y-4">
             {posts.map((post) => (
               <Card
                 key={post.id}
-                className="order-last border-0 bg-transparent shadow-none sm:order-first sm:col-span-12 lg:col-span-10 lg:col-start-2"
+                className="order-last border-0 bg-transparent shadow-none sm:order-first col-span-12"
               >
                 <div className="grid gap-y-6 sm:grid-cols-10 sm:gap-x-5 sm:gap-y-0 md:items-center md:gap-x-8 lg:gap-x-12">
-                  <div className="sm:col-span-5">
+                  <div className="col-span-12">
                     {/* <div className="mb-4 md:mb-6">
                       <div className="flex flex-wrap gap-3 text-xs uppercase tracking-wider text-muted-foreground md:gap-5 lg:gap-6">
                         {post.tags?.map((tag) => <span key={tag}>{tag}</span>)}
                       </div>
                     </div> */}
-                    <h3 className="text-xl font-semibold md:text-2xl lg:text-3xl">
+                    <h3 className="text-xl font-semibold md:text-2xl lg:text-3xl md:text-center">
                       <Link
                         href={post.url}
                         className="hover:underline"
                       >
-                        {post.title}
+                        {post.title} <span className="font-light">{post.subtitle}</span>
                       </Link>
                     </h3>
                     {/* <div className="mt-4 text-muted-foreground md:mt-5">

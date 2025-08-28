@@ -44,7 +44,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
       </head>
-      <body className="min-h-screen bg-background font-sans antialiased">
+      <body className="flex flex-col min-h-screen bg-background font-sans antialiased">
         <VideoDialogProvider>
           {children}
           <VideoDialog />
