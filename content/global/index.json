@@ -27,7 +27,7 @@
   },
   "theme": {
     "color": "yellow",
-    "font": "sans",
+    "font": "nunito",
     "darkMode": "dark"
   }
 }

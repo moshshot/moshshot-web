@@ -111,6 +111,12 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+.prose {
+  --tw-prose-body: #d4d4d4; /* neutral-300 */
+  --tw-prose-headings: #e5e5e5; /* neutral-200 */
+  --tw-prose-links: #60a5fa; /* blue-400 */
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

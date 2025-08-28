@@ -2,9 +2,9 @@ import type { Collection } from 'tinacms';
 import { AutoDetectGallerySchema } from '@/components/blocks/autoGallery';
 
 const Post: Collection = {
-  label: 'Blog Posts',
+  label: 'Photography',
   name: 'post',
-  path: 'content/posts',
+  path: 'content/photography',
   format: 'mdx',
   fields: [
     // TITLE SECTION
@@ -82,10 +82,37 @@ const Post: Collection = {
       ui: {
         component: 'textarea',
       }
-    }
+    },
     
     // POST CONTENT - This comes last and is the main MDX body
-    // Note: The body field is typically handled automatically for MDX files
+    {
+      type: 'rich-text',
+      label: 'Body',
+      name: 'body',
+      isBody: true,
+      templates: [
+        {
+          name: 'BlockQuote',
+          label: 'Block Quote',
+          fields: [
+            {
+              name: 'quote',
+              label: 'Quote',
+              type: 'string',
+              ui: {
+                component: 'textarea'
+              }
+            },
+            {
+              name: 'author',
+              label: 'Author',
+              type: 'string'
+            }
+          ]
+        }
+        // Add more custom components as needed
+      ]
+    }
   ],
 };
 

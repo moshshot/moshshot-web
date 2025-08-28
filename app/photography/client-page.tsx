@@ -31,7 +31,7 @@ export default function PostsClientPage(props: ClientPostProps) {
       published: formattedDate,
       title: post.title,
       tags: post.tags?.map((tag) => tag?.tag?.name) || [],
-      url: `/posts/${post._sys.breadcrumbs.join('/')}`,
+      url: `/photography/${post._sys.breadcrumbs.join('/')}`,
       excerpt: post.excerpt,
       heroImg: post.heroImg,
       author: {
@@ -44,17 +44,8 @@ export default function PostsClientPage(props: ClientPostProps) {
   return (
     <ErrorBoundary>
       <Section>
-        <div className="container flex flex-col items-center gap-16">
-          <div className="text-center">
-            <h2 className="mx-auto mb-6 text-pretty text-3xl font-semibold md:text-4xl lg:max-w-3xl">
-              Blog Posts
-            </h2>
-            <p className="mx-auto max-w-2xl text-muted-foreground md:text-lg">
-              Discover the latest insights and tutorials about modern web development, UI design, and component-driven architecture.
-            </p>
-          </div>
-
-          <div className="grid gap-y-10 sm:grid-cols-12 sm:gap-y-12 md:gap-y-16 lg:gap-y-20">
+        <div className="container py-20 flex flex-col items-center gap-16">
+          <div className="grid gap-y-2 sm:grid-cols-12 md:gap-y-4">
             {posts.map((post) => (
               <Card
                 key={post.id}
@@ -62,11 +53,11 @@ export default function PostsClientPage(props: ClientPostProps) {
               >
                 <div className="grid gap-y-6 sm:grid-cols-10 sm:gap-x-5 sm:gap-y-0 md:items-center md:gap-x-8 lg:gap-x-12">
                   <div className="sm:col-span-5">
-                    <div className="mb-4 md:mb-6">
+                    {/* <div className="mb-4 md:mb-6">
                       <div className="flex flex-wrap gap-3 text-xs uppercase tracking-wider text-muted-foreground md:gap-5 lg:gap-6">
                         {post.tags?.map((tag) => <span key={tag}>{tag}</span>)}
                       </div>
-                    </div>
+                    </div> */}
                     <h3 className="text-xl font-semibold md:text-2xl lg:text-3xl">
                       <Link
                         href={post.url}
@@ -75,10 +66,10 @@ export default function PostsClientPage(props: ClientPostProps) {
                         {post.title}
                       </Link>
                     </h3>
-                    <div className="mt-4 text-muted-foreground md:mt-5">
+                    {/* <div className="mt-4 text-muted-foreground md:mt-5">
                       <TinaMarkdown content={post.excerpt} />
-                    </div>
-                    <div className="mt-6 flex items-center space-x-4 text-sm md:mt-8">
+                    </div> */}
+                    {/* <div className="mt-6 flex items-center space-x-4 text-sm md:mt-8">
                       <Avatar>
                         {post.author.avatar && (
                           <AvatarImage
@@ -96,8 +87,8 @@ export default function PostsClientPage(props: ClientPostProps) {
                       <span className="text-muted-foreground">
                         {post.published}
                       </span>
-                    </div>
-                    <div className="mt-6 flex items-center space-x-2 md:mt-8">
+                    </div> */}
+                    {/* <div className="mt-6 flex items-center space-x-2 md:mt-8">
                       <Link
                         href={post.url}
                         className="inline-flex items-center font-semibold hover:underline md:text-base"
@@ -105,7 +96,7 @@ export default function PostsClientPage(props: ClientPostProps) {
                         <span>Read more</span>
                         <ArrowRight className="ml-2 size-4 transition-transform" />
                       </Link>
-                    </div>
+                    </div> */}
                   </div>
                   {post.heroImg && (
                     <div className="order-first sm:order-last sm:col-span-5">
