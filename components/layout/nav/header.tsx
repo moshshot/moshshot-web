@@ -9,36 +9,37 @@ export const Header = () => {
   const { globalSettings, theme } = useLayout();
   const header = globalSettings!.header!;
 
-  const [menuState, setMenuState] = React.useState(false)
+  const [menuState, setMenuState] = React.useState(false);
   return (
     <header>
       <nav
-        data-state={menuState && 'active'}
-        className="bg-background/50 fixed z-20 w-full border-b backdrop-blur-3xl">
+        data-state={menuState && "active"}
+        className="bg-background/50 fixed z-20 w-full border-b backdrop-blur-3xl"
+      >
         <div className="mx-auto max-w-6xl px-6 transition-all duration-300">
           <div className="relative flex flex-wrap items-center justify-between gap-6 py-3 lg:gap-0 lg:py-4">
             <div className="flex w-full items-center justify-between gap-12">
               <Link
                 href="/"
                 aria-label="home"
-                className="flex items-center space-x-2">
+                className="flex items-center space-x-2"
+              >
                 {header.logo ? (
-                  <img 
+                  <img
                     src={header.logo}
                     alt={header.name || "Logo"}
                     className="h-8 w-auto object-contain"
                   />
                 ) : (
-                  <span className="font-semibold">
-                    {header.name}
-                  </span>
+                  <span className="font-semibold">{header.name}</span>
                 )}
               </Link>
 
               <button
                 onClick={() => setMenuState(!menuState)}
-                aria-label={menuState == true ? 'Close Menu' : 'Open Menu'}
-                className="relative z-20 -m-2.5 -mr-4 block cursor-pointer p-2.5 lg:hidden">
+                aria-label={menuState == true ? "Close Menu" : "Open Menu"}
+                className="relative z-20 -m-2.5 -mr-4 block cursor-pointer p-2.5 lg:hidden"
+              >
                 <Menu className="in-data-[state=active]:rotate-180 in-data-[state=active]:scale-0 in-data-[state=active]:opacity-0 m-auto size-6 duration-200" />
                 <X className="in-data-[state=active]:rotate-0 in-data-[state=active]:scale-100 in-data-[state=active]:opacity-100 absolute inset-0 m-auto size-6 -rotate-180 scale-0 opacity-0 duration-200" />
               </button>
@@ -49,7 +50,8 @@ export const Header = () => {
                     <li key={index}>
                       <Link
                         href={item!.href!}
-                        className="text-muted-foreground hover:text-accent-foreground block duration-150">
+                        className="text-lg text-white/80 hover:text-white/100 block duration-150"
+                      >
                         <span>{item!.label}</span>
                       </Link>
                     </li>
@@ -65,7 +67,8 @@ export const Header = () => {
                     <li key={index}>
                       <Link
                         href={item!.href!}
-                        className="text-muted-foreground hover:text-accent-foreground block duration-150">
+                        className="text-lg text-white/80 hover:text-white/100 block duration-150"
+                      >
                         <span>{item!.label}</span>
                       </Link>
                     </li>
@@ -77,5 +80,5 @@ export const Header = () => {
         </div>
       </nav>
     </header>
-  )
-}
+  );
+};
