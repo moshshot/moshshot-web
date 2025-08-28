@@ -2,22 +2,6 @@ import React, { useState, useEffect } from 'react'
 import Masonry from 'react-masonry-css'
 import GalleryManager from '@/tina/fields/galleryManager'
 
-// Add CSS for masonry (put this in your global CSS or component)
-const masonryStyles = `
-  .masonry-grid {
-    display: flex;
-    margin-left: -16px; /* gutter size offset */
-    width: auto;
-  }
-  .masonry-grid-column {
-    padding-left: 16px; /* gutter size */
-    background-clip: padding-box;
-  }
-  .masonry-grid-column > div {
-    margin-bottom: 16px;
-  }
-`
-
 export const AutoGallery = ({ data }: any) => {
   const {
     folderPath,
@@ -106,34 +90,73 @@ export const AutoGallery = ({ data }: any) => {
   }
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center py-12">
-        <div className="text-gray-500">Loading gallery...</div>
+    const loaderArray = ['350px', '280px', '370px', '240px', '420px', '180px'];
+    const loaderLoop = loaderArray.map((image: any, index: number) => (
+      <div
+        key={index}
+        className={`group relative overflow-hidden rounded-lg ${
+          layout === 'grid' ? 'aspect-square' : ''
+        }`}
+      >
+        <div
+          className={`
+            bg-neutral-800 transition-transform duration-300 group-hover:scale-105
+            ${layout === 'grid' 
+              ? 'h-full object-cover' 
+              : 'h-auto object-cover block'
+            }
+          `}
+        >
+          <div style={{height: image}}></div>
+        </div>
       </div>
+    ))
+
+    return (
+      <>
+      <style>{`
+        .masonry-grid {
+          display: flex;
+          margin-left: -${masonryGutters[gap]}px;
+          width: auto;
+        }
+        .masonry-grid-column {
+          padding-left: ${masonryGutters[gap]}px;
+          background-clip: padding-box;
+        }
+        .masonry-grid-column > div {
+          margin-bottom: ${masonryGutters[gap]}px;
+        }
+      `}</style>
+        {layout === 'masonry' ? (
+          <Masonry
+            breakpointCols={breakpointColumns[columns]}
+            className="masonry-grid animate-pulse"
+            columnClassName="masonry-grid-column"
+          >
+            {loaderLoop}
+          </Masonry>
+        ) : (
+          <div className={`${gridClasses[columns]} ${gapClasses[gap]}`}>
+            {loaderLoop}
+          </div>
+        )}
+      </>
     )
   }
 
   if (!folderPath) {
-    return (
-      <div className="text-center py-12 text-gray-500">
-        <p>No folder path specified</p>
-      </div>
-    )
+    return (null)
   }
 
   if (galleryImages.length === 0) {
-    return (
-      <div className="text-center py-12 text-gray-500">
-        <p>No images found in folder: {folderPath}</p>
-        <p className="text-sm mt-2">Make sure images are in /public/{folderPath}</p>
-      </div>
-    )
+    return (null)
   }
 
   const imageElements = galleryImages.map((image: any, index: number) => (
     <div
       key={image.filename || index}
-      className={`group relative overflow-hidden rounded-lg bg-gray-100 cursor-pointer ${
+      className={`group relative overflow-hidden rounded-lg cursor-pointer ${
         layout === 'grid' ? 'aspect-square' : ''
       }`}
       onClick={() => lightbox && setSelectedImage(image)}
