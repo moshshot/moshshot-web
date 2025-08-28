@@ -146,11 +146,11 @@ export const AutoGallery = ({ data }: any) => {
   }
 
   if (!folderPath) {
-    return (null)
+    return (<></>)
   }
 
   if (galleryImages.length === 0) {
-    return (null)
+    return (<></>)
   }
 
   const imageElements = galleryImages.map((image: any, index: number) => (
