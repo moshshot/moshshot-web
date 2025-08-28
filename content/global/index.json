@@ -3,7 +3,13 @@
     "logo": "/uploads/moshshot-logo-w.svg",
     "logoHeight": 48,
     "name": "MOSHSHOT",
-    "color": "default"
+    "color": "default",
+    "nav": [
+      {
+        "href": "photography",
+        "label": "Photography"
+      }
+    ]
   },
   "footer": {
     "social": [
