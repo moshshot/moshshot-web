@@ -64,7 +64,7 @@ export default function PostsClientPage(props: ClientPostProps) {
                         href={post.url}
                         className="hover:underline"
                       >
-                        {post.title} <span className="font-light">{post.subtitle}</span>
+                        {post.title} <span className="font-light">{post?.subtitle || ''}</span>
                       </Link>
                     </h3>
                     {/* <div className="mt-4 text-muted-foreground md:mt-5">

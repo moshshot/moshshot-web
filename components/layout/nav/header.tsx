@@ -49,7 +49,7 @@ export const Header = () => {
                   {header?.nav?.map((item, index) => (
                     <li key={index}>
                       <Link
-                        href={item!.href!}
+                        href={`/${item!.href!}`}
                         className="text-lg text-white/80 hover:text-white/100 block duration-150"
                       >
                         <span>{item!.label}</span>
@@ -66,7 +66,7 @@ export const Header = () => {
                   {header?.nav?.map((item, index) => (
                     <li key={index}>
                       <Link
-                        href={item!.href!}
+                        href={`/${item!.href!}`}
                         className="text-lg text-white/80 hover:text-white/100 block duration-150"
                       >
                         <span>{item!.label}</span>
