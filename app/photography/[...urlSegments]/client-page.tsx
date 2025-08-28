@@ -43,15 +43,14 @@ export default function PostClientPage(props: ClientPostProps) {
         <div className="my-20">
           <h1
             data-tina-field={tinaField(post, 'title')}
-            className="w-full relative mb-8 text-6xl font-semibold text-center"
-            // className="text-xl font-semibold md:text-2xl lg:text-3xl"
+            className="w-full relative mb-8 text-xl md:text-3xl lg:text-4xl font-semibold text-center"
           >
-            {post.title}
-            {post.subtitle && (
+            {post.title} <span data-tina-field={tinaField(post, 'subtitle')} className="font-light">{post?.subtitle || ''}</span>
+            {/* {post.subtitle && (
               <span data-tina-field={tinaField(post, 'subtitle')} className="font-light">
                 &nbsp;{post.subtitle}
               </span>
-            )}
+            )} */}
           </h1>
           {/* {post.subtitle && (
             <p data-tina-field={tinaField(post, 'subtitle')} className="text-2xl text-center text-neutral-200 mb-8">
