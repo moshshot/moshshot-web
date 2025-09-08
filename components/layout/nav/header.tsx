@@ -50,7 +50,7 @@ export const Header = () => {
                     <li key={index}>
                       <Link
                         href={`/${item!.href!}`}
-                        className="text-lg text-white/80 hover:text-white/100 block duration-150"
+                        className="text-lg text-white/80 hover:text-white/100 block duration-150 uppercase"
                       >
                         <span>{item!.label}</span>
                       </Link>
