@@ -1,4 +1,5 @@
 import React from 'react'
+import Image from 'next/image'
 
 export const HeroBG = ({ data }) => {
   const {
@@ -25,9 +26,10 @@ export const HeroBG = ({ data }) => {
       {/* Background Image */}
       {backgroundImage && (
         <div className="absolute inset-0 z-0">
-          <img
+          <Image
             src={backgroundImage}
             alt=""
+            fill
             className="w-full h-full object-cover"
           />
           {/* Overlay */}
@@ -43,9 +45,11 @@ export const HeroBG = ({ data }) => {
         {/* Logo Above Heading */}
         {logoImage && logoPosition === 'above' && (
           <div className="mb-6 flex justify-center">
-            <img
+            <Image
               src={logoImage}
-              alt="Logo"
+              alt="MOSHSHOT Logo"
+              width={0}
+              height={0}
               style={{ width: logoWidth, height: 'auto' }}
               className="object-contain"
             />
@@ -59,9 +63,11 @@ export const HeroBG = ({ data }) => {
         {/* Logo Between Heading and Subheading */}
         {logoImage && logoPosition === 'between' && (
           <div className="mb-4 flex justify-center">
-            <img
+            <Image
               src={logoImage}
-              alt="Logo"
+              alt="MOSHSHOT Logo"
+              width={0}
+              height={0}
               style={{ width: logoWidth, height: 'auto' }}
               className="object-contain"
             />
@@ -75,9 +81,11 @@ export const HeroBG = ({ data }) => {
         {/* Logo Below Subheading */}
         {logoImage && logoPosition === 'below' && (
           <div className="mt-6 flex justify-center">
-            <img
+            <Image
               src={logoImage}
-              alt="Logo"
+              alt="MOSHSHOT Logo"
+              width={0}
+              height={0}
               style={{ width: logoWidth, height: 'auto' }}
               className="object-contain"
             />

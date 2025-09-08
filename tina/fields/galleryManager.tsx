@@ -48,10 +48,33 @@ const GalleryManager = ({ field, input, form }: any) => {
       }
       
       const images = data.images || []
-      setAvailableImages(images)
       
+      // Generate blur data for each image
+      const imagesWithBlur = await Promise.all(
+        images.map(async (img: any) => {
+          try {
+            const blurResponse = await fetch('/api/generate-blur', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ imagePath: img.path })
+            });
+            
+            if (blurResponse.ok) {
+              const blurData = await blurResponse.json();
+              return { ...img, ...blurData };
+            }
+          } catch (error) {
+            console.error('Failed to generate blur for', img.path);
+          }
+          return img;
+        })
+      );
+      
+      setAvailableImages(imagesWithBlur)
+      
+      // Update captions with blur data
       const currentCaptions = input.value || []
-      const newImages = images.filter(
+      const newImages = imagesWithBlur.filter(
         (img: any) => !currentCaptions.find((cap: any) => cap.filename === img.filename)
       )
       
@@ -61,6 +84,9 @@ const GalleryManager = ({ field, input, form }: any) => {
           ...newImages.map((img: any) => ({
             filename: img.filename,
             path: img.path,
+            blurDataURL: img.blurDataURL,
+            width: img.width,
+            height: img.height,
             caption: '',
             alt: '',
             tags: []

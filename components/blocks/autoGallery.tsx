@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import Masonry from 'react-masonry-css'
 import GalleryManager from '@/tina/fields/galleryManager'
+import Image from 'next/image'
 
 export const AutoGallery = ({ data }: any) => {
   const {
@@ -15,17 +16,55 @@ export const AutoGallery = ({ data }: any) => {
   const [galleryImages, setGalleryImages] = useState([])
   const [selectedImage, setSelectedImage] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [loadedImages, setLoadedImages] = useState(new Set());
+  const [cssBlurData, setCssBlurData] = useState<Record<string, any>>({})
 
+  // Load CSS blur data on mount
   useEffect(() => {
-    loadGalleryImages()
-  }, [folderPath, savedImages])
+    loadCssBlurData()
+  }, [])
+
+  // Load gallery images when CSS data is ready
+  useEffect(() => {
+    if (Object.keys(cssBlurData).length > 0 || !loading) {
+      loadGalleryImages()
+    }
+  }, [folderPath, savedImages, cssBlurData])
+
+  const loadCssBlurData = async () => {
+    try {
+      const response = await fetch('/css-blur-data.json')
+      if (response.ok) {
+        const data = await response.json()
+        setCssBlurData(data)
+        console.log('Loaded CSS blur data for', Object.keys(data).length, 'images')
+      }
+    } catch (error) {
+      console.error('Failed to load CSS blur data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const loadGalleryImages = async () => {   
     if (savedImages && savedImages.length > 0) {
       const validImages = savedImages.filter((img: any) => img.path || img.url)
       
       if (validImages.length > 0) {
-        setGalleryImages(validImages)
+        const enhancedImages = validImages.map((img: any) => {
+          const imagePath = img.path || img.url
+          const blurData = cssBlurData[imagePath] || {}
+          
+          return {
+            ...img,
+            path: imagePath,
+            cssBlur: blurData.css || null,
+            width: blurData.width || img.width || 800,
+            height: blurData.height || img.height || 600,
+          }
+        })
+        
+        setGalleryImages(enhancedImages)
         setLoading(false)
         return
       }
@@ -38,7 +77,13 @@ export const AutoGallery = ({ data }: any) => {
         const data = await response.json()
         
         if (data.images && data.images.length > 0) {
-          setGalleryImages(data.images)
+          const enhancedImages = data.images.map((img: any) => ({
+            ...img,
+            cssBlur: cssBlurData[img.path]?.css || null,
+            width: img.width || cssBlurData[img.path]?.width || 800,
+            height: img.height || cssBlurData[img.path]?.height || 600,
+          }))
+          setGalleryImages(enhancedImages)
         } else {
           setGalleryImages([])
         }
@@ -94,7 +139,7 @@ export const AutoGallery = ({ data }: any) => {
     const loaderLoop = loaderArray.map((image: any, index: number) => (
       <div
         key={index}
-        className={`group relative overflow-hidden rounded-lg ${
+        className={`group relative overflow-hidden rounded-xs ${
           layout === 'grid' ? 'aspect-square' : ''
         }`}
       >
@@ -117,6 +162,7 @@ export const AutoGallery = ({ data }: any) => {
       <style>{`
         .masonry-grid {
           display: flex;
+          margin-top: ${masonryGutters[gap]}px;
           margin-left: -${masonryGutters[gap]}px;
           width: auto;
         }
@@ -145,37 +191,56 @@ export const AutoGallery = ({ data }: any) => {
     )
   }
 
-  if (!folderPath) {
-    return (null)
+  if (!folderPath && (!savedImages || savedImages.length === 0)) {
+    return null
   }
 
   if (galleryImages.length === 0) {
-    return (null)
+    return null
   }
 
   const imageElements = galleryImages.map((image: any, index: number) => (
     <div
       key={image.filename || index}
-      className={`group relative overflow-hidden rounded-lg cursor-pointer ${
+      className={`group relative overflow-hidden rounded-xs cursor-pointer ${
         layout === 'grid' ? 'aspect-square' : ''
       }`}
       onClick={() => lightbox && setSelectedImage(image)}
     >
-      <img
+      {/* Show CSS blur placeholder until image loads */}
+      {image.cssBlur && !loadedImages.has(index) && (
+        <div 
+          className="absolute inset-0 w-full h-full blur-3xl"
+          style={{
+            ...image.cssBlur,
+            transform: `${image.cssBlur?.transform || ''} scale(1.1)`,
+          }}
+        />
+      )}
+      
+      {/* Actual image */}
+      <Image
         src={image.path}
         alt={image.alt || image.caption || `Gallery image ${index + 1}`}
-        className={`
-          w-full transition-transform duration-300 group-hover:scale-105
-          ${layout === 'grid' 
-            ? 'h-full object-cover' 
-            : 'h-auto object-cover block'
-          }
-        `}
-        onError={(e: any) => {
-          console.error(`Failed to load image: ${image.path}`)
+        width={image.width}
+        height={image.height}
+        className={`transition-all duration-500 group-hover:scale-105 ${
+          layout === 'grid' 
+            ? 'w-full h-full object-cover' 
+            : 'w-full h-auto'
+        }`}
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        quality={85}
+        loading="lazy"
+        onLoad={() => {
+          setLoadedImages(prev => {
+            const newSet = new Set(prev);
+            newSet.add(index);
+            return newSet;
+          });
         }}
       />
-      
+
       {image.caption && (
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
           <p className="text-white text-sm font-medium">{image.caption}</p>
@@ -196,6 +261,7 @@ export const AutoGallery = ({ data }: any) => {
       <style>{`
         .masonry-grid {
           display: flex;
+          margin-top: ${masonryGutters[gap]}px;
           margin-left: -${masonryGutters[gap]}px;
           width: auto;
         }
@@ -237,11 +303,15 @@ export const AutoGallery = ({ data }: any) => {
           </button>
           
           <figure className="max-w-7xl" onClick={(e: any) => e.stopPropagation()}>
-            <img
+            <Image
               src={(selectedImage as any).path}
               alt={(selectedImage as any).alt || (selectedImage as any).caption}
+              width={(selectedImage as any).width}
+              height={(selectedImage as any).height}
+              quality={100}
               className="max-w-full max-h-[80vh] object-contain"
             />
+
             {(selectedImage as any).caption && (
               <figcaption className="text-white text-center mt-4">
                 {(selectedImage as any).caption}
