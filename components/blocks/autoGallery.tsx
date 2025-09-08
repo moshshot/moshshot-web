@@ -210,10 +210,10 @@ export const AutoGallery = ({ data }: any) => {
       {/* Show CSS blur placeholder until image loads */}
       {image.cssBlur && !loadedImages.has(index) && (
         <div 
-          className="absolute inset-0 w-full h-full blur-3xl"
+          className="absolute inset-0 w-full h-full blur-2xl"
           style={{
             ...image.cssBlur,
-            transform: `${image.cssBlur?.transform || ''} scale(1.1)`,
+            transform: `${image.cssBlur?.transform || ''} scale(1.5)`,
           }}
         />
       )}
@@ -228,7 +228,7 @@ export const AutoGallery = ({ data }: any) => {
           layout === 'grid' 
             ? 'w-full h-full object-cover' 
             : 'w-full h-auto'
-        }`}
+        } ${loadedImages.has(index) ? 'opacity-100' : 'opacity-0'}`}
         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         quality={85}
         loading="lazy"
