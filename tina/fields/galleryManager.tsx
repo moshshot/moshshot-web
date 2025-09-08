@@ -7,6 +7,7 @@ const GalleryManager = ({ field, input, form }: any) => {
   const [lastScannedFolder, setLastScannedFolder] = useState('')
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  const [orderInputs, setOrderInputs] = useState<{[key: number]: string}>({})
   
   const getFolderPath = () => {
     if (field?.name) {
@@ -136,6 +137,83 @@ const GalleryManager = ({ field, input, form }: any) => {
   const removeImage = (index: number) => {
     const updated = (input.value || []).filter((_: any, i: number) => i !== index)
     input.onChange(updated)
+    // Clear any order input for this index
+    setOrderInputs(prev => {
+      const newInputs = { ...prev }
+      delete newInputs[index]
+      return newInputs
+    })
+  }
+
+  // Manual position input handlers
+  const handleOrderInputChange = (index: number, value: string) => {
+    // Only allow numeric input
+    if (value === '' || /^\d+$/.test(value)) {
+      setOrderInputs(prev => ({ ...prev, [index]: value }))
+    }
+  }
+
+  const handleOrderInputBlur = (index: number) => {
+    const value = orderInputs[index]
+    if (value === undefined || value === '') {
+      // Clear the input if empty
+      setOrderInputs(prev => {
+        const newInputs = { ...prev }
+        delete newInputs[index]
+        return newInputs
+      })
+      return
+    }
+
+    const newPosition = parseInt(value, 10) - 1 // Convert to 0-based index
+    const items = input.value || []
+    
+    // Validate the new position
+    if (newPosition < 0 || newPosition >= items.length || newPosition === index) {
+      // Reset to current position if invalid
+      setOrderInputs(prev => {
+        const newInputs = { ...prev }
+        delete newInputs[index]
+        return newInputs
+      })
+      return
+    }
+
+    // Reorder the array
+    const newOrder = [...items]
+    const [removed] = newOrder.splice(index, 1)
+    newOrder.splice(newPosition, 0, removed)
+    
+    input.onChange(newOrder)
+    
+    // Force form to mark as dirty
+    if (form?.change) {
+      form.change(field.name, newOrder)
+    }
+    
+    // Clear the input after successful reorder
+    setOrderInputs(prev => {
+      const newInputs = { ...prev }
+      delete newInputs[index]
+      return newInputs
+    })
+    
+    console.log(`Moved item from position ${index + 1} to ${newPosition + 1}`)
+  }
+
+  const handleOrderInputKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === 'Enter') {
+      handleOrderInputBlur(index)
+      e.currentTarget.blur()
+    } else if (e.key === 'Escape') {
+      // Clear input on escape
+      setOrderInputs(prev => {
+        const newInputs = { ...prev }
+        delete newInputs[index]
+        return newInputs
+      })
+      e.currentTarget.blur()
+    }
   }
 
   // Drag and Drop handlers
@@ -254,7 +332,7 @@ const GalleryManager = ({ field, input, form }: any) => {
 
       {lastScannedFolder && (
         <p className="text-sm text-gray-600">
-          Last scanned: {lastScannedFolder} · Drag images to reorder
+          Last scanned: {lastScannedFolder} · Drag images to reorder or type position number
         </p>
       )}
 
@@ -289,44 +367,62 @@ const GalleryManager = ({ field, input, form }: any) => {
             >
               <div className="flex gap-4">
                 {/* Drag Handle & Order Controls */}
-                <div 
-                  className="flex flex-col items-center justify-center gap-1 cursor-move hover:bg-gray-100 rounded p-1"
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, index)}
-                  onDragEnd={handleDragEnd}
-                >
-                  <svg className="w-5 h-5 text-gray-400 pointer-events-none" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M7 2a2 2 0 11-4 0 2 2 0 014 0zM7 6a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0zM15 2a2 2 0 11-4 0 2 2 0 014 0zM15 6a2 2 0 11-4 0 2 2 0 014 0zM15 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                  </svg>
-                  <div className="flex flex-col gap-1">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        moveImage(index, 'up')
-                      }}
-                      disabled={index === 0}
-                      className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30"
-                      title="Move up"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        moveImage(index, 'down')
-                      }}
-                      disabled={index === images.length - 1}
-                      className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30"
-                      title="Move down"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="flex flex-col items-center justify-center gap-1 cursor-move hover:bg-gray-100 rounded p-1"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <svg className="w-5 h-5 text-gray-400 pointer-events-none" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M7 2a2 2 0 11-4 0 2 2 0 014 0zM7 6a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0zM15 2a2 2 0 11-4 0 2 2 0 014 0zM15 6a2 2 0 11-4 0 2 2 0 014 0zM15 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    <div className="flex flex-col gap-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          moveImage(index, 'up')
+                        }}
+                        disabled={index === 0}
+                        className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30"
+                        title="Move up"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          moveImage(index, 'down')
+                        }}
+                        disabled={index === images.length - 1}
+                        className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30"
+                        title="Move down"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Position Number Input */}
+                  <div className="flex flex-col items-center">
+                    <input
+                      type="text"
+                      value={orderInputs[index] !== undefined ? orderInputs[index] : index + 1}
+                      onChange={(e) => handleOrderInputChange(index, e.target.value)}
+                      onBlur={() => handleOrderInputBlur(index)}
+                      onKeyDown={(e) => handleOrderInputKeyDown(e, index)}
+                      onFocus={(e) => e.target.select()}
+                      className="w-12 px-1 py-0.5 text-center border border-gray-300 rounded text-sm font-medium"
+                      title="Type position number and press Enter"
+                      placeholder={(index + 1).toString()}
+                    />
+                    <span className="text-xs text-gray-400 mt-0.5">#{index + 1}</span>
                   </div>
                 </div>
 
@@ -344,8 +440,7 @@ const GalleryManager = ({ field, input, form }: any) => {
 
                 {/* Caption Fields */}
                 <div className="flex-grow space-y-2">
-                  <div className="font-medium text-sm text-gray-700 flex items-center gap-2">
-                    <span className="text-gray-400">#{index + 1}</span>
+                  <div className="font-medium text-sm text-gray-700">
                     {image.filename}
                   </div>
 
