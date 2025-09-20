@@ -43,7 +43,7 @@ export default function PostClientPage(props: ClientPostProps) {
         <div className="my-20">
           <h1
             data-tina-field={tinaField(post, 'title')}
-            className="w-full relative mb-8 text-xl md:text-3xl lg:text-4xl font-semibold text-center"
+            className="w-full relative mb-4 md:mb-8 text-xl md:text-3xl lg:text-4xl font-semibold text-center"
           >
             {post.title} <span data-tina-field={tinaField(post, 'subtitle')} className="font-light">{post?.subtitle || ''}</span>
             {/* {post.subtitle && (
@@ -52,11 +52,19 @@ export default function PostClientPage(props: ClientPostProps) {
               </span>
             )} */}
           </h1>
-          {/* {post.subtitle && (
-            <p data-tina-field={tinaField(post, 'subtitle')} className="text-2xl text-center text-neutral-200 mb-8">
-              {post.subtitle}
+          {post.subtext && (
+            <p data-tina-field={tinaField(post, 'subtext')} className="text-lg md:text-2xl lg:text-3xl text-center text-neutral-200 mb-4 md:mb-8">
+              {post.subtext}
             </p>
-          )} */}
+          )}
+          <div data-tina-field={tinaField(post, 'body')} className='prose prose-gray w-full max-w-none text-center'>
+            <TinaMarkdown
+              content={post.body}
+              components={{
+                ...components,
+              }}
+            />
+          </div>
         </div>
         
         {/* <div data-tina-field={tinaField(post, 'author')} className='flex items-center justify-center mb-16'>
@@ -124,14 +132,6 @@ export default function PostClientPage(props: ClientPostProps) {
           </div>
         )}
         
-        <div data-tina-field={tinaField(post, 'body')} className='prose prose-gray w-full max-w-none'>
-          <TinaMarkdown
-            content={post.body}
-            components={{
-              ...components,
-            }}
-          />
-        </div>
       </Section>
     </ErrorBoundary>
   );

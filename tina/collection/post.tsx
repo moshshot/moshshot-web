@@ -10,18 +10,24 @@ const Post: Collection = {
     // TITLE SECTION
     {
       type: 'string',
-      label: 'Title',
+      label: 'Title (Bold)',
       name: 'title',
       isTitle: true,
       required: true,
+      description: 'Bold part of title',
+    },
+    {
+      type: 'string',
+      label: 'Title (Normal)',
+      name: 'subtitle',
+      description: 'Non bold part of title',
     },
     {
       type: 'string',
       label: 'Subtitle',
-      name: 'subtitle',
-      description: 'Optional subtitle displayed under the title',
+      name: 'subtext',
+      description: 'Optional text displayed under the title',
     },
-    
     // GALLERY SECTION
     {
       type: 'object',
