@@ -13,11 +13,11 @@ const GalleryManager = ({ field, input, form }: any) => {
   const getImageKitUrl = (baseUrl: string, transformations: string): string => {
     if (!baseUrl) return "";
 
-      // Remove updatedAt query parameter specifically while preserving others
-  let cleanPath = baseUrl.replace(/[?&]updatedAt=\d+/g, '');
-  
-  // Clean up any trailing ? or & that might be left
-  cleanPath = cleanPath.replace(/[?&]$/, '');
+    // Remove updatedAt query parameter specifically while preserving others
+    let cleanPath = baseUrl.replace(/[?&]updatedAt=\d+/g, "");
+
+    // Clean up any trailing ? or & that might be left
+    cleanPath = cleanPath.replace(/[?&]$/, "");
     if (cleanPath.includes("?tr=")) return cleanPath;
     return `${cleanPath}?tr=${transformations}`;
   };
@@ -56,135 +56,200 @@ const GalleryManager = ({ field, input, form }: any) => {
     }));
   };
 
-  const scanFolder = async (folder: string) => {
-    if (!folder) return;
+const scanFolder = async (folder: string) => {
+  if (!folder) return;
 
-    const cleanFolder = cleanImageKitPath(folder);
-    if (cleanFolder === lastScannedFolder) return;
+  const cleanFolder = cleanImageKitPath(folder);
+  const currentFolderPath = getCurrentFolderPath();
+  const isDifferentFolder = currentFolderPath && currentFolderPath !== cleanFolder;
 
-    setLoading(true);
-    setLastScannedFolder(cleanFolder);
+  setLoading(true);
+  setLastScannedFolder(cleanFolder);
 
-    try {
-      console.log("Scanning ImageKit folder:", cleanFolder);
+  try {
+    console.log("Scanning ImageKit folder:", cleanFolder);
+    
+    if (isDifferentFolder) {
+      console.log(`Switching from folder "${currentFolderPath}" to "${cleanFolder}" - will clear existing images`);
+    } else {
+      console.log(`Rescanning same folder "${cleanFolder}" - will sync images`);
+    }
 
-      const response = await fetch("/api/imagekit/list-files", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          folderPath: cleanFolder,
-          fileType: "image",
-          limit: 100,
-        }),
-      });
+    const response = await fetch("/api/imagekit/list-files", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        folderPath: cleanFolder,
+        fileType: "image",
+        limit: 100,
+      }),
+    });
 
-      console.log("API Response status:", response.status);
+    console.log("API Response status:", response.status);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("API Response not OK:", response.status, errorText);
-        throw new Error(`API Error: ${response.status} - ${errorText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("API Response not OK:", response.status, errorText);
+      throw new Error(`API Error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log("API Response data:", data);
+
+    if (data.error) {
+      console.error("ImageKit API Error:", data.error, data.details);
+      setAvailableImages([]);
+      alert(
+        `ImageKit Error: ${data.error}\nDetails: ${
+          data.details || "Unknown error"
+        }`
+      );
+      return;
+    }
+
+    const images = data.images || [];
+
+    const processedImages = images
+      .filter((img: any) => img.fileId && img.filename && img.path)
+      .map((img: any) => ({
+        filename: img.filename,
+        path: img?.path.split('?')[0] || '',
+        fileId: img.fileId,
+        width: img.width || 0,
+        height: img.height || 0,
+        size: img.size || 0,
+        folder: img.folder || cleanFolder,
+        folderPath: cleanFolder,
+        createdAt: img.createdAt,
+        thumbnailUrl: getImageKitUrl(
+          img.path,
+          "w-96,h-96,c-maintain_ratio,f-webp,q-80"
+        ),
+        blurDataURL: getImageKitUrl(img.path, "bl-10,w-20,h-20,q-30,f-webp"),
+        previewUrl: getImageKitUrl(
+          img.path,
+          "w-120,h-120,c-maintain_ratio,f-webp,q-85"
+        ),
+      }));
+
+    setAvailableImages(processedImages);
+
+    const currentCaptions = input.value || [];
+
+    if (isDifferentFolder) {
+      // Different folder: clear existing images and add all new ones
+      const newCaptions = processedImages.map((img: any) => ({
+        filename: img.filename,
+        path: img.path,
+        fileId: img.fileId,
+        folderPath: cleanFolder,
+        thumbnailUrl: img.thumbnailUrl,
+        blurDataURL: img.blurDataURL,
+        previewUrl: img.previewUrl,
+        width: img.width,
+        height: img.height,
+        size: img.size,
+        folder: img.folder,
+        caption: "",
+        alt: img.filename.replace(/\.[^/.]+$/, ""),
+        tags: [],
+      }));
+
+      input.onChange(newCaptions);
+
+      if (form?.change) {
+        form.change(field.name, newCaptions);
       }
 
-      const data = await response.json();
-      console.log("API Response data:", data);
-
-      if (data.error) {
-        console.error("ImageKit API Error:", data.error, data.details);
-        setAvailableImages([]);
-        alert(
-          `ImageKit Error: ${data.error}\nDetails: ${
-            data.details || "Unknown error"
-          }`
-        );
-        return;
-      }
-
-      const images = data.images || [];
-
-      const processedImages = images
-        .filter((img: any) => img.fileId && img.filename && img.path)
-        .map((img: any) => ({
-          filename: img.filename,
-          path: img?.path.split('?')[0] || '',
-          fileId: img.fileId,
-          width: img.width || 0,
-          height: img.height || 0,
-          size: img.size || 0,
-          folder: img.folder || cleanFolder,
-          folderPath: cleanFolder, // Store the folder path
-          createdAt: img.createdAt,
-          thumbnailUrl: getImageKitUrl(
-            img.path,
-            "w-96,h-96,c-maintain_ratio,f-webp,q-80"
-          ),
-          blurDataURL: getImageKitUrl(img.path, "bl-10,w-20,h-20,q-30,f-webp"),
-          previewUrl: getImageKitUrl(
-            img.path,
-            "w-120,h-120,c-maintain_ratio,f-webp,q-85"
-          ),
-        }));
-
-      setAvailableImages(processedImages);
-
-      const currentCaptions = input.value || [];
+      console.log(`Switched to new folder "${cleanFolder}" - loaded ${processedImages.length} images`);
+    } else {
+      // Same folder: sync images (add new, remove deleted)
       const currentFileIds = new Set(
         currentCaptions.map((cap: any) => cap.fileId).filter(Boolean)
       );
+      
+      const availableFileIds = new Set(
+        processedImages.map((img: any) => img.fileId)
+      );
 
+      console.log("DEBUG - Current images count:", currentCaptions.length);
+      console.log("DEBUG - Available images count:", processedImages.length);
+      console.log("DEBUG - Current fileIds:", Array.from(currentFileIds));
+      console.log("DEBUG - Available fileIds:", Array.from(availableFileIds));
+
+      // Find images to remove (exist in current but not in available)
+      const imagesToRemove = currentCaptions.filter(
+        (cap: any) => cap.fileId && !availableFileIds.has(cap.fileId)
+      );
+
+      // Find new images to add (exist in available but not in current)
       const newImages = processedImages.filter(
         (img: any) => !currentFileIds.has(img.fileId)
       );
 
-      if (newImages.length > 0) {
-        const updatedCaptions = [
-          // Update existing images with folder path
-          ...storeFolderPathInImages(currentCaptions, cleanFolder),
-          // Add new images with folder path
-          ...newImages.map((img: any) => ({
-            filename: img.filename,
-            path: img.path,
-            fileId: img.fileId,
-            folderPath: cleanFolder,
-            thumbnailUrl: img.thumbnailUrl,
-            blurDataURL: img.blurDataURL,
-            previewUrl: img.previewUrl,
-            width: img.width,
-            height: img.height,
-            size: img.size,
-            folder: img.folder,
-            caption: "",
-            alt: img.filename.replace(/\.[^/.]+$/, ""),
-            tags: [],
-          })),
-        ];
+      // Keep existing images that still exist in the folder (must have fileId and be in available)
+      const existingImages = currentCaptions.filter(
+        (cap: any) => cap.fileId && availableFileIds.has(cap.fileId)
+      );
 
-        input.onChange(updatedCaptions);
+      console.log("DEBUG - Images to remove:", imagesToRemove.length);
+      console.log("DEBUG - New images to add:", newImages.length);
+      console.log("DEBUG - Existing images to keep:", existingImages.length);
 
-        if (form?.change) {
-          form.change(field.name, updatedCaptions);
-        }
+      // Create the final list: existing images (that still exist) + new images
+      const updatedCaptions = [
+        // Update existing images with folder path (preserve captions/metadata)
+        ...existingImages.map(img => ({
+          ...img,
+          folderPath: cleanFolder
+        })),
+        // Add new images
+        ...newImages.map((img: any) => ({
+          filename: img.filename,
+          path: img.path,
+          fileId: img.fileId,
+          folderPath: cleanFolder,
+          thumbnailUrl: img.thumbnailUrl,
+          blurDataURL: img.blurDataURL,
+          previewUrl: img.previewUrl,
+          width: img.width,
+          height: img.height,
+          size: img.size,
+          folder: img.folder,
+          caption: "",
+          alt: img.filename.replace(/\.[^/.]+$/, ""),
+          tags: [],
+        })),
+      ];
 
-        console.log(`Added ${newImages.length} new ImageKit images to gallery`);
-      } else {
-        // Still update existing images with folder path
-        const updatedCaptions = storeFolderPathInImages(
-          currentCaptions,
-          cleanFolder
-        );
-        input.onChange(updatedCaptions);
+      console.log("DEBUG - Final updated captions count:", updatedCaptions.length);
 
-        if (form?.change) {
-          form.change(field.name, updatedCaptions);
-        }
+      input.onChange(updatedCaptions);
+
+      if (form?.change) {
+        form.change(field.name, updatedCaptions);
       }
-    } catch (error) {
-      console.error("Failed to scan ImageKit folder:", error);
-      setAvailableImages([]);
-    } finally {
-      setLoading(false);
+
+      // Log the changes
+      if (imagesToRemove.length > 0) {
+        console.log(`Removed ${imagesToRemove.length} images no longer in folder:`, 
+          imagesToRemove.map(img => img.filename));
+      }
+      if (newImages.length > 0) {
+        console.log(`Added ${newImages.length} new images:`, 
+          newImages.map(img => img.filename));
+      }
+      if (imagesToRemove.length === 0 && newImages.length === 0) {
+        console.log(`Folder "${cleanFolder}" is up to date - no changes needed`);
+      }
     }
-  };
+  } catch (error) {
+    console.error("Failed to scan ImageKit folder:", error);
+    setAvailableImages([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Initialize manual path from stored data on component mount
   useEffect(() => {
@@ -478,7 +543,7 @@ const GalleryManager = ({ field, input, form }: any) => {
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold">Gallery Images</h3>
-        <button
+        {/* <button
           type="button"
           onClick={() => {
             if (manualPath) {
@@ -490,7 +555,7 @@ const GalleryManager = ({ field, input, form }: any) => {
           disabled={loading || !manualPath}
         >
           {loading ? "Loading from ImageKit..." : "Rescan ImageKit Folder"}
-        </button>
+        </button> */}
       </div>
 
       <div className="space-y-2">
@@ -509,7 +574,6 @@ const GalleryManager = ({ field, input, form }: any) => {
             type="button"
             onClick={() => {
               if (manualPath) {
-                setLastScannedFolder("");
                 scanFolder(manualPath);
               }
             }}
