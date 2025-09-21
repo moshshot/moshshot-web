@@ -12,8 +12,14 @@ const GalleryManager = ({ field, input, form }: any) => {
   // Utility functions
   const getImageKitUrl = (baseUrl: string, transformations: string): string => {
     if (!baseUrl) return "";
-    if (baseUrl.includes("?tr=")) return baseUrl;
-    return `${baseUrl}?tr=${transformations}`;
+
+      // Remove updatedAt query parameter specifically while preserving others
+  let cleanPath = baseUrl.replace(/[?&]updatedAt=\d+/g, '');
+  
+  // Clean up any trailing ? or & that might be left
+  cleanPath = cleanPath.replace(/[?&]$/, '');
+    if (cleanPath.includes("?tr=")) return cleanPath;
+    return `${cleanPath}?tr=${transformations}`;
   };
 
   const isValidImageData = (image: any): boolean => {
@@ -100,7 +106,7 @@ const GalleryManager = ({ field, input, form }: any) => {
         .filter((img: any) => img.fileId && img.filename && img.path)
         .map((img: any) => ({
           filename: img.filename,
-          path: img.path,
+          path: img?.path.split('?')[0] || '',
           fileId: img.fileId,
           width: img.width || 0,
           height: img.height || 0,
@@ -120,8 +126,6 @@ const GalleryManager = ({ field, input, form }: any) => {
         }));
 
       setAvailableImages(processedImages);
-
-      console.log(10101, { images }, { processedImages });
 
       const currentCaptions = input.value || [];
       const currentFileIds = new Set(
@@ -396,6 +400,37 @@ const GalleryManager = ({ field, input, form }: any) => {
     const [imageError, setImageError] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
+    // Generate thumbnail URL if it doesn't exist
+    const getThumbnailUrl = (image: any) => {
+      if (image.thumbnailUrl) {
+        return image.thumbnailUrl;
+      }
+      if (image.previewUrl) {
+        return image.previewUrl;
+      }
+      if (image.path) {
+        return getImageKitUrl(
+          image.path,
+          "w-96,h-96,c-maintain_ratio,f-webp,q-80"
+        );
+      }
+      return image.path;
+    };
+
+    //   thumbnailUrl: getImageKitUrl(
+    //   img.path,
+    //   "w-96,h-96,c-maintain_ratio,f-webp,q-80"
+    // ),
+    // blurDataURL: getImageKitUrl(img.path, "bl-10,w-20,h-20,q-30,f-webp"),
+    // previewUrl: getImageKitUrl(
+    //   img.path,
+    //   "w-120,h-120,c-maintain_ratio,f-webp,q-85"
+    // ),
+
+    const thumbnailUrl = getThumbnailUrl(image);
+
+    console.log({ image, thumbnailUrl });
+
     return (
       <div className="flex-shrink-0 relative">
         {isLoading && (
@@ -405,7 +440,7 @@ const GalleryManager = ({ field, input, form }: any) => {
         )}
         {!imageError ? (
           <img
-            src={image.previewUrl || image.thumbnailUrl || image.path}
+            src={thumbnailUrl}
             alt={image.alt || image.filename}
             className={`w-24 h-24 object-cover rounded border transition-opacity ${
               isLoading ? "opacity-0" : "opacity-100"
@@ -434,16 +469,10 @@ const GalleryManager = ({ field, input, form }: any) => {
             </svg>
           </div>
         )}
-
-        {process.env.NODE_ENV === "development" && (
-          <div className="absolute -bottom-6 left-0 text-xs text-gray-500 bg-white px-1 rounded">
-            {image.width}×{image.height}
-            {image.size && ` • ${Math.round(image.size / 1024)}KB`}
-          </div>
-        )}
       </div>
     );
   };
+  console.log(40404, { availableImages });
 
   const images = input.value || [];
   const currentFolderPath = getCurrentFolderPath();
@@ -658,13 +687,9 @@ const GalleryManager = ({ field, input, form }: any) => {
                     <div className="font-medium text-sm text-gray-700 flex-1">
                       {image.filename}
                     </div>
-                    <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                      {image.width}×{image.height}
-                      {image.size && ` • ${Math.round(image.size / 1024)}KB`}
-                    </div>
                   </div>
 
-                  <div className="flex flex-col gap-2">
+                  {/* <div className="flex flex-col gap-2">
                     <input
                       type="text"
                       placeholder="Caption"
@@ -675,12 +700,7 @@ const GalleryManager = ({ field, input, form }: any) => {
                       className="w-full px-2 py-1 border border-solid border-gray-300 rounded text-sm"
                     />
 
-                    {process.env.NODE_ENV === "development" && (
-                      <div className="text-xs text-gray-400 font-mono">
-                        ID: {image.fileId} | Folder: {image.folderPath}
-                      </div>
-                    )}
-                  </div>
+                  </div> */}
                 </div>
 
                 <button
