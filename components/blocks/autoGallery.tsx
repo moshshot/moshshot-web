@@ -18,36 +18,10 @@ export const AutoGallery = ({ data }: any) => {
   const [loadedImages, setLoadedImages] = useState(new Set());
   const [cssBlurData, setCssBlurData] = useState<Record<string, any>>({});
 
-  // Load CSS blur data on mount
-  useEffect(() => {
-    loadCssBlurData();
-  }, []);
-
   // Load gallery images when CSS data is ready
   useEffect(() => {
-    if (Object.keys(cssBlurData).length > 0 || !loading) {
       loadGalleryImages();
-    }
-  }, [savedImages, cssBlurData]);
-
-  const loadCssBlurData = async () => {
-    try {
-      const response = await fetch("/css-blur-data.json");
-      if (response.ok) {
-        const data = await response.json();
-        setCssBlurData(data);
-        console.log(
-          "Loaded CSS blur data for",
-          Object.keys(data).length,
-          "images"
-        );
-      }
-    } catch (error) {
-      console.error("Failed to load CSS blur data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [savedImages]);
 
   const loadGalleryImages = async () => {
     if (savedImages && savedImages.length > 0) {
@@ -78,13 +52,7 @@ export const AutoGallery = ({ data }: any) => {
             height: blurData.height || img.height || 600,
             blurDataURL:
               img.blurDataURL ||
-              getImageKitUrl(imagePath, "bl-10,w-20,h-20,q-30,f-webp"),
-            previewUrl:
-              img.previewUrl ||
-              getImageKitUrl(
-                imagePath,
-                "w-120,h-120,c-maintain_ratio,f-webp,q-85"
-              ),
+              getImageKitUrl(imagePath, "bl-80,w-400,q-40,f-webp"),
             thumbnailUrl:
               img.thumbnailUrl ||
               getImageKitUrl(
@@ -216,14 +184,15 @@ export const AutoGallery = ({ data }: any) => {
       }`}
       onClick={() => lightbox && setSelectedImage(image)}
     >
-      {/* Show CSS blur placeholder until image loads */}
-      {image.cssBlur && !loadedImages.has(index) && (
-        <div
-          className="absolute inset-0 w-full h-full blur-2xl"
-          style={{
-            ...image.cssBlur,
-            transform: `${image.cssBlur?.transform || ""} scale(1.5)`,
-          }}
+      {/* Show blur placeholder until image loads */}
+      {!loadedImages.has(index) && (
+        <Image
+          src={image.blurDataURL || image.path}
+          alt={image.alt || image.caption || `Gallery image ${index + 1}`}
+          width={image.width}
+          height={image.height}
+          className={`absolute inset-0 w-full h-full blur-lg`}
+          quality={85}
         />
       )}
 
