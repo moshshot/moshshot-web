@@ -429,8 +429,6 @@ const GalleryManager = ({ field, input, form }: any) => {
 
     const thumbnailUrl = getThumbnailUrl(image);
 
-    console.log({ image, thumbnailUrl });
-
     return (
       <div className="flex-shrink-0 relative">
         {isLoading && (
@@ -472,7 +470,6 @@ const GalleryManager = ({ field, input, form }: any) => {
       </div>
     );
   };
-  console.log(40404, { availableImages });
 
   const images = input.value || [];
   const currentFolderPath = getCurrentFolderPath();

@@ -58,15 +58,41 @@ export const AutoGallery = ({ data }: any) => {
           const imagePath = img.path || img.url;
           const blurData = cssBlurData[imagePath] || {};
 
+          // Recreate ImageKit URLs if not present
+          const getImageKitUrl = (
+            baseUrl: string,
+            transformations: string
+          ): string => {
+            if (!baseUrl) return "";
+            let cleanPath = baseUrl.replace(/[?&]updatedAt=\d+/g, "");
+            cleanPath = cleanPath.replace(/[?&]$/, "");
+            if (cleanPath.includes("?tr=")) return cleanPath;
+            return `${cleanPath}?tr=${transformations}`;
+          };
+
           return {
             ...img,
             path: imagePath,
             cssBlur: blurData.css || null,
             width: blurData.width || img.width || 800,
             height: blurData.height || img.height || 600,
+            blurDataURL:
+              img.blurDataURL ||
+              getImageKitUrl(imagePath, "bl-10,w-20,h-20,q-30,f-webp"),
+            previewUrl:
+              img.previewUrl ||
+              getImageKitUrl(
+                imagePath,
+                "w-120,h-120,c-maintain_ratio,f-webp,q-85"
+              ),
+            thumbnailUrl:
+              img.thumbnailUrl ||
+              getImageKitUrl(
+                imagePath,
+                "w-96,h-96,c-maintain_ratio,f-webp,q-80"
+              ),
           };
         });
-
         setGalleryImages(enhancedImages);
         setLoading(false);
         return;
@@ -179,6 +205,8 @@ export const AutoGallery = ({ data }: any) => {
   if (galleryImages.length === 0) {
     return null;
   }
+
+  console.log(10101, { galleryImages });
 
   const imageElements = galleryImages.map((image: any, index: number) => (
     <div
