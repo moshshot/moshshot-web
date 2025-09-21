@@ -1,18 +1,18 @@
-'use client';
-import React from 'react';
-import Image from 'next/image';
-import { format } from 'date-fns';
-import { tinaField, useTina } from 'tinacms/dist/react';
-import { TinaMarkdown } from 'tinacms/dist/rich-text';
-import { PostQuery } from '@/tina/__generated__/types';
-import { useLayout } from '@/components/layout/layout-context';
-import { Section } from '@/components/layout/section';
-import { components } from '@/components/mdx-components';
-import ErrorBoundary from '@/components/error-boundary';
-import { AutoGallery } from '@/components/blocks/autoGallery';
+"use client";
+import React from "react";
+import Image from "next/image";
+import { format } from "date-fns";
+import { tinaField, useTina } from "tinacms/dist/react";
+import { TinaMarkdown } from "tinacms/dist/rich-text";
+import { PostQuery } from "@/tina/__generated__/types";
+import { useLayout } from "@/components/layout/layout-context";
+import { Section } from "@/components/layout/section";
+import { components } from "@/components/mdx-components";
+import ErrorBoundary from "@/components/error-boundary";
+import { AutoGallery } from "@/components/blocks/autoGallery";
 
 const titleColorClasses = {
-  blue: 'from-blue-400 to-blue-600 dark:from-blue-300 dark:to-blue-500',
+  blue: "from-blue-400 to-blue-600 dark:from-blue-300 dark:to-blue-500",
   // ... rest of colors
 };
 
@@ -30,22 +30,29 @@ export default function PostClientPage(props: ClientPostProps) {
   const post = data.post;
 
   const date = new Date(post.date!);
-  let formattedDate = '';
+  let formattedDate = "";
   if (!isNaN(date.getTime())) {
-    formattedDate = format(date, 'MMM dd, yyyy');
+    formattedDate = format(date, "MMM dd, yyyy");
   }
 
-  const titleColour = titleColorClasses[theme!.color! as keyof typeof titleColorClasses];
+  const titleColour =
+    titleColorClasses[theme!.color! as keyof typeof titleColorClasses];
 
   return (
     <ErrorBoundary>
       <Section>
         <div className="my-20">
           <h1
-            data-tina-field={tinaField(post, 'title')}
+            data-tina-field={tinaField(post, "title")}
             className="w-full relative mb-4 md:mb-8 text-xl md:text-3xl lg:text-4xl font-semibold text-center"
           >
-            {post.title} <span data-tina-field={tinaField(post, 'subtitle')} className="font-light">{post?.subtitle || ''}</span>
+            {post.title}{" "}
+            <span
+              data-tina-field={tinaField(post, "subtitle")}
+              className="font-light"
+            >
+              {post?.subtitle || ""}
+            </span>
             {/* {post.subtitle && (
               <span data-tina-field={tinaField(post, 'subtitle')} className="font-light">
                 &nbsp;{post.subtitle}
@@ -53,11 +60,17 @@ export default function PostClientPage(props: ClientPostProps) {
             )} */}
           </h1>
           {post.subtext && (
-            <p data-tina-field={tinaField(post, 'subtext')} className="text-lg md:text-2xl lg:text-3xl text-center text-neutral-200 mb-4 md:mb-8">
+            <p
+              data-tina-field={tinaField(post, "subtext")}
+              className="text-lg md:text-2xl lg:text-3xl text-center text-neutral-200 mb-4 md:mb-8"
+            >
               {post.subtext}
             </p>
           )}
-          <div data-tina-field={tinaField(post, 'body')} className='prose prose-gray w-full max-w-none text-center'>
+          <div
+            data-tina-field={tinaField(post, "body")}
+            className="prose prose-gray w-full max-w-none text-center"
+          >
             <TinaMarkdown
               content={post.body}
               components={{
@@ -66,7 +79,7 @@ export default function PostClientPage(props: ClientPostProps) {
             />
           </div>
         </div>
-        
+
         {/* <div data-tina-field={tinaField(post, 'author')} className='flex items-center justify-center mb-16'>
           {post.author && (
             <>
@@ -125,13 +138,12 @@ export default function PostClientPage(props: ClientPostProps) {
             </div>
           </div>
         )} */}
-        
-        {post.gallery?.enabled && post.gallery?.folderPath && (
+
+        {post.gallery?.enabled && post.gallery?.images?.length && (
           <div className="mb-12">
             <AutoGallery data={post.gallery} />
           </div>
         )}
-        
       </Section>
     </ErrorBoundary>
   );

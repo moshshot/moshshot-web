@@ -1,291 +1,452 @@
-// tina/fields/galleryManager.tsx
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from "react";
 
 const GalleryManager = ({ field, input, form }: any) => {
-  const [availableImages, setAvailableImages] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [lastScannedFolder, setLastScannedFolder] = useState('')
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
-  const [orderInputs, setOrderInputs] = useState<{[key: number]: string}>({})
-  
-  const getFolderPath = () => {
-    if (field?.name) {
-      const parentPath = field.name.replace('.images', '')
-      const folderFieldName = `${parentPath}.folderPath`
-      
-      if (form?.getFieldState) {
-        const folderFieldState = form.getFieldState(folderFieldName)
-        if (folderFieldState?.value) {
-          return folderFieldState.value
-        }
-      }
-      
-      if (form?.getState) {
-        const state = form.getState()
-        const blocks = state?.values?.blocks
-        if (blocks && blocks[0]) {
-          return blocks[0].folderPath
-        }
-      }
+  const [availableImages, setAvailableImages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [lastScannedFolder, setLastScannedFolder] = useState("");
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [orderInputs, setOrderInputs] = useState<{ [key: number]: string }>({});
+  const [manualPath, setManualPath] = useState("");
+
+  // Utility functions
+  const getImageKitUrl = (baseUrl: string, transformations: string): string => {
+    if (!baseUrl) return "";
+    if (baseUrl.includes("?tr=")) return baseUrl;
+    return `${baseUrl}?tr=${transformations}`;
+  };
+
+  const isValidImageData = (image: any): boolean => {
+    return (
+      image &&
+      typeof image.fileId === "string" &&
+      typeof image.filename === "string" &&
+      typeof image.path === "string"
+    );
+  };
+
+  const cleanImageKitPath = (path: string): string => {
+    if (!path) return "";
+    return path
+      .replace(/^\/+|\/+$/g, "")
+      .replace(/\/+/g, "/")
+      .trim();
+  };
+
+  // Get the stored folder path from the first image (if any)
+  const getCurrentFolderPath = () => {
+    const images = input.value || [];
+    if (images.length > 0 && images[0].folderPath) {
+      return cleanImageKitPath(images[0].folderPath);
     }
-    return ''
-  }
+    return "";
+  };
+
+  // Store folder path in all images when scanning
+  const storeFolderPathInImages = (images: any[], folderPath: string) => {
+    return images.map((img) => ({
+      ...img,
+      folderPath: cleanImageKitPath(folderPath),
+    }));
+  };
 
   const scanFolder = async (folder: string) => {
-    if (!folder || folder === lastScannedFolder) return
-    
-    setLoading(true)
-    setLastScannedFolder(folder)
-    
+    if (!folder) return;
+
+    const cleanFolder = cleanImageKitPath(folder);
+    if (cleanFolder === lastScannedFolder) return;
+
+    setLoading(true);
+    setLastScannedFolder(cleanFolder);
+
     try {
-      const response = await fetch(`/api/scan-folder?folder=${encodeURIComponent(folder)}`)
-      const data = await response.json()
-      
-      if (data.error) {
-        console.error('API Error:', data.error)
-        setAvailableImages([])
-        return
+      console.log("Scanning ImageKit folder:", cleanFolder);
+
+      const response = await fetch("/api/imagekit/list-files", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          folderPath: cleanFolder,
+          fileType: "image",
+          limit: 100,
+        }),
+      });
+
+      console.log("API Response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API Response not OK:", response.status, errorText);
+        throw new Error(`API Error: ${response.status} - ${errorText}`);
       }
-      
-      const images = data.images || []
-      
-      // Generate blur data for each image
-      const imagesWithBlur = await Promise.all(
-        images.map(async (img: any) => {
-          try {
-            const blurResponse = await fetch('/api/generate-blur', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ imagePath: img.path })
-            });
-            
-            if (blurResponse.ok) {
-              const blurData = await blurResponse.json();
-              return { ...img, ...blurData };
-            }
-          } catch (error) {
-            console.error('Failed to generate blur for', img.path);
-          }
-          return img;
-        })
+
+      const data = await response.json();
+      console.log("API Response data:", data);
+
+      if (data.error) {
+        console.error("ImageKit API Error:", data.error, data.details);
+        setAvailableImages([]);
+        alert(
+          `ImageKit Error: ${data.error}\nDetails: ${
+            data.details || "Unknown error"
+          }`
+        );
+        return;
+      }
+
+      const images = data.images || [];
+
+      const processedImages = images
+        .filter((img: any) => img.fileId && img.filename && img.path)
+        .map((img: any) => ({
+          filename: img.filename,
+          path: img.path,
+          fileId: img.fileId,
+          width: img.width || 0,
+          height: img.height || 0,
+          size: img.size || 0,
+          folder: img.folder || cleanFolder,
+          folderPath: cleanFolder, // Store the folder path
+          createdAt: img.createdAt,
+          thumbnailUrl: getImageKitUrl(
+            img.path,
+            "w-96,h-96,c-maintain_ratio,f-webp,q-80"
+          ),
+          blurDataURL: getImageKitUrl(img.path, "bl-10,w-20,h-20,q-30,f-webp"),
+          previewUrl: getImageKitUrl(
+            img.path,
+            "w-120,h-120,c-maintain_ratio,f-webp,q-85"
+          ),
+        }));
+
+      setAvailableImages(processedImages);
+
+      console.log(10101, { images }, { processedImages });
+
+      const currentCaptions = input.value || [];
+      const currentFileIds = new Set(
+        currentCaptions.map((cap: any) => cap.fileId).filter(Boolean)
       );
-      
-      setAvailableImages(imagesWithBlur)
-      
-      // Update captions with blur data
-      const currentCaptions = input.value || []
-      const newImages = imagesWithBlur.filter(
-        (img: any) => !currentCaptions.find((cap: any) => cap.filename === img.filename)
-      )
-      
+
+      const newImages = processedImages.filter(
+        (img: any) => !currentFileIds.has(img.fileId)
+      );
+
       if (newImages.length > 0) {
         const updatedCaptions = [
-          ...currentCaptions,
+          // Update existing images with folder path
+          ...storeFolderPathInImages(currentCaptions, cleanFolder),
+          // Add new images with folder path
           ...newImages.map((img: any) => ({
             filename: img.filename,
             path: img.path,
+            fileId: img.fileId,
+            folderPath: cleanFolder,
+            thumbnailUrl: img.thumbnailUrl,
             blurDataURL: img.blurDataURL,
+            previewUrl: img.previewUrl,
             width: img.width,
             height: img.height,
-            caption: '',
-            alt: '',
-            tags: []
-          }))
-        ]
-        input.onChange(updatedCaptions)
+            size: img.size,
+            folder: img.folder,
+            caption: "",
+            alt: img.filename.replace(/\.[^/.]+$/, ""),
+            tags: [],
+          })),
+        ];
+
+        input.onChange(updatedCaptions);
+
+        if (form?.change) {
+          form.change(field.name, updatedCaptions);
+        }
+
+        console.log(`Added ${newImages.length} new ImageKit images to gallery`);
+      } else {
+        // Still update existing images with folder path
+        const updatedCaptions = storeFolderPathInImages(
+          currentCaptions,
+          cleanFolder
+        );
+        input.onChange(updatedCaptions);
+
+        if (form?.change) {
+          form.change(field.name, updatedCaptions);
+        }
       }
     } catch (error) {
-      console.error('Failed to scan folder:', error)
-      setAvailableImages([])
+      console.error("Failed to scan ImageKit folder:", error);
+      setAvailableImages([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
+  // Initialize manual path from stored data on component mount
   useEffect(() => {
-    const checkForFolder = () => {
-      const folderPath = getFolderPath()
-      if (folderPath && folderPath !== lastScannedFolder) {
-        scanFolder(folderPath)
-      }
+    const storedPath = getCurrentFolderPath();
+    if (storedPath && !manualPath) {
+      setManualPath(storedPath);
+      setLastScannedFolder(storedPath);
     }
-    
-    checkForFolder()
-    const interval = setInterval(checkForFolder, 1000)
-    return () => clearInterval(interval)
-  }, [form, lastScannedFolder])
-
-  const [tagInputs, setTagInputs] = useState<{[key: string]: string}>({})
+  }, []);
 
   const updateCaption = (index: number, fieldName: string, value: any) => {
-    const updated = [...(input.value || [])]
-    updated[index] = { ...updated[index], [fieldName]: value }
-    input.onChange(updated)
-  }
+    const updated = [...(input.value || [])];
+    if (updated[index]) {
+      updated[index] = { ...updated[index], [fieldName]: value };
+      input.onChange(updated);
 
-  const handleTagChange = (index: number, value: string) => {
-    setTagInputs(prev => ({ ...prev, [index]: value }))
-  }
-
-  const handleTagBlur = (index: number) => {
-    const value = tagInputs[index] || (input.value[index]?.tags || []).join(', ')
-    const tags = value.split(',').map((t: string) => t.trim()).filter(Boolean)
-    updateCaption(index, 'tags', tags)
-  }
+      if (form?.change) {
+        form.change(field.name, updated);
+      }
+    }
+  };
 
   const removeImage = (index: number) => {
-    const updated = (input.value || []).filter((_: any, i: number) => i !== index)
-    input.onChange(updated)
-    // Clear any order input for this index
-    setOrderInputs(prev => {
-      const newInputs = { ...prev }
-      delete newInputs[index]
-      return newInputs
-    })
-  }
+    const currentImages = input.value || [];
+    if (index < 0 || index >= currentImages.length) return;
 
-  // Manual position input handlers
-  const handleOrderInputChange = (index: number, value: string) => {
-    // Only allow numeric input
-    if (value === '' || /^\d+$/.test(value)) {
-      setOrderInputs(prev => ({ ...prev, [index]: value }))
+    const updated = currentImages.filter((_: any, i: number) => i !== index);
+    input.onChange(updated);
+
+    if (form?.change) {
+      form.change(field.name, updated);
     }
-  }
+
+    setOrderInputs((prev) => {
+      const newInputs = { ...prev };
+      delete newInputs[index];
+
+      const shifted: { [key: number]: string } = {};
+      Object.entries(newInputs).forEach(([key, val]) => {
+        const keyNum = parseInt(key, 10);
+        if (keyNum > index) {
+          shifted[keyNum - 1] = val;
+        } else {
+          shifted[keyNum] = val;
+        }
+      });
+
+      return shifted;
+    });
+  };
+
+  const handleOrderInputChange = (index: number, value: string) => {
+    if (value === "" || /^\d+$/.test(value)) {
+      setOrderInputs((prev) => ({ ...prev, [index]: value }));
+    }
+  };
 
   const handleOrderInputBlur = (index: number) => {
-    const value = orderInputs[index]
-    if (value === undefined || value === '') {
-      // Clear the input if empty
-      setOrderInputs(prev => {
-        const newInputs = { ...prev }
-        delete newInputs[index]
-        return newInputs
-      })
-      return
+    const value = orderInputs[index];
+    if (value === undefined || value === "") {
+      setOrderInputs((prev) => {
+        const newInputs = { ...prev };
+        delete newInputs[index];
+        return newInputs;
+      });
+      return;
     }
 
-    const newPosition = parseInt(value, 10) - 1 // Convert to 0-based index
-    const items = input.value || []
-    
-    // Validate the new position
-    if (newPosition < 0 || newPosition >= items.length || newPosition === index) {
-      // Reset to current position if invalid
-      setOrderInputs(prev => {
-        const newInputs = { ...prev }
-        delete newInputs[index]
-        return newInputs
-      })
-      return
+    const newPosition = parseInt(value, 10) - 1;
+    const items = input.value || [];
+
+    if (
+      newPosition < 0 ||
+      newPosition >= items.length ||
+      newPosition === index ||
+      !items[index]
+    ) {
+      setOrderInputs((prev) => {
+        const newInputs = { ...prev };
+        delete newInputs[index];
+        return newInputs;
+      });
+      return;
     }
 
-    // Reorder the array
-    const newOrder = [...items]
-    const [removed] = newOrder.splice(index, 1)
-    newOrder.splice(newPosition, 0, removed)
-    
-    input.onChange(newOrder)
-    
-    // Force form to mark as dirty
+    const newOrder = [...items];
+    const [removed] = newOrder.splice(index, 1);
+    newOrder.splice(newPosition, 0, removed);
+
+    input.onChange(newOrder);
+
     if (form?.change) {
-      form.change(field.name, newOrder)
+      form.change(field.name, newOrder);
     }
-    
-    // Clear the input after successful reorder
-    setOrderInputs(prev => {
-      const newInputs = { ...prev }
-      delete newInputs[index]
-      return newInputs
-    })
-    
-    console.log(`Moved item from position ${index + 1} to ${newPosition + 1}`)
-  }
+
+    setOrderInputs((prev) => {
+      const newInputs = { ...prev };
+      delete newInputs[index];
+      return newInputs;
+    });
+
+    console.log(
+      `Moved ImageKit image "${removed.filename}" from position ${
+        index + 1
+      } to ${newPosition + 1}`
+    );
+  };
 
   const handleOrderInputKeyDown = (e: React.KeyboardEvent, index: number) => {
-    if (e.key === 'Enter') {
-      handleOrderInputBlur(index)
-      e.currentTarget.blur()
-    } else if (e.key === 'Escape') {
-      // Clear input on escape
-      setOrderInputs(prev => {
-        const newInputs = { ...prev }
-        delete newInputs[index]
-        return newInputs
-      })
-      e.currentTarget.blur()
+    if (e.key === "Enter") {
+      handleOrderInputBlur(index);
+      e.currentTarget.blur();
+    } else if (e.key === "Escape") {
+      setOrderInputs((prev) => {
+        const newInputs = { ...prev };
+        delete newInputs[index];
+        return newInputs;
+      });
+      e.currentTarget.blur();
     }
-  }
+  };
 
-  // Drag and Drop handlers
   const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedIndex(index)
-    e.dataTransfer.effectAllowed = 'move'
-  }
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-    setDragOverIndex(index)
-  }
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverIndex(index);
+  };
 
   const handleDragLeave = () => {
-    setDragOverIndex(null)
-  }
+    setDragOverIndex(null);
+  };
 
   const handleDrop = (e: React.DragEvent, dropIndex: number) => {
-    e.preventDefault()
-    e.stopPropagation()
-    
+    e.preventDefault();
+    e.stopPropagation();
+
     if (draggedIndex === null || draggedIndex === dropIndex) {
-      setDraggedIndex(null)
-      setDragOverIndex(null)
-      return
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
     }
 
-    // Create completely new array to ensure React detects the change
-    const items = input.value || []
-    const newOrder = Array.from(items)
-    
-    // Remove and reinsert
-    const [removed] = newOrder.splice(draggedIndex, 1)
-    const insertAt = draggedIndex < dropIndex ? dropIndex - 1 : dropIndex
-    newOrder.splice(insertAt, 0, removed)
-    
-    // Update with new array reference
-    input.onChange(newOrder)
-    
-    // Force form to mark as dirty
-    if (form?.change) {
-      form.change(field.name, newOrder)
+    const items = input.value || [];
+    if (items.length === 0) return;
+
+    const newOrder = Array.from(items);
+
+    if (
+      draggedIndex < 0 ||
+      draggedIndex >= newOrder.length ||
+      dropIndex < 0 ||
+      dropIndex > newOrder.length
+    ) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
     }
-    
-    // Reset drag state
+
+    const [removed] = newOrder.splice(draggedIndex, 1);
+    const insertAt = draggedIndex < dropIndex ? dropIndex - 1 : dropIndex;
+    newOrder.splice(insertAt, 0, removed);
+
+    input.onChange(newOrder);
+
+    if (form?.change) {
+      form.change(field.name, newOrder);
+    }
+
     setTimeout(() => {
-      setDraggedIndex(null)
-      setDragOverIndex(null)
-    }, 0)
-    
-    console.log('Reordered:', newOrder.map((i: any) => i.filename))
-  }
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+    }, 0);
+
+    console.log(
+      "Reordered ImageKit images:",
+      newOrder.map((i: any) => `${i.filename} (${i.fileId})`)
+    );
+  };
 
   const handleDragEnd = () => {
-    setDraggedIndex(null)
-    setDragOverIndex(null)
-  }
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
 
-  // Manual reordering with buttons
-  const moveImage = (index: number, direction: 'up' | 'down') => {
-    const newIndex = direction === 'up' ? index - 1 : index + 1
-    const items = [...(input.value || [])]
-    
-    if (newIndex < 0 || newIndex >= items.length) return
-    
-    [items[index], items[newIndex]] = [items[newIndex], items[index]]
-    input.onChange(items)
-  }
+  const moveImage = (index: number, direction: "up" | "down") => {
+    const items = [...(input.value || [])];
+    const newIndex = direction === "up" ? index - 1 : index + 1;
 
-  const images = input.value || []
-  const [manualPath, setManualPath] = useState('')
+    if (
+      newIndex < 0 ||
+      newIndex >= items.length ||
+      !items[index] ||
+      !items[newIndex]
+    ) {
+      return;
+    }
+
+    [items[index], items[newIndex]] = [items[newIndex], items[index]];
+
+    input.onChange(items);
+
+    if (form?.change) {
+      form.change(field.name, items);
+    }
+  };
+
+  const ImagePreview = ({ image, index }: { image: any; index: number }) => {
+    const [imageError, setImageError] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    return (
+      <div className="flex-shrink-0 relative">
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded border w-24 h-24">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+          </div>
+        )}
+        {!imageError ? (
+          <img
+            src={image.previewUrl || image.thumbnailUrl || image.path}
+            alt={image.alt || image.filename}
+            className={`w-24 h-24 object-cover rounded border transition-opacity ${
+              isLoading ? "opacity-0" : "opacity-100"
+            }`}
+            onLoad={() => setIsLoading(false)}
+            onError={() => {
+              setImageError(true);
+              setIsLoading(false);
+            }}
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-24 h-24 bg-gray-200 rounded border flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+        )}
+
+        {process.env.NODE_ENV === "development" && (
+          <div className="absolute -bottom-6 left-0 text-xs text-gray-500 bg-white px-1 rounded">
+            {image.width}×{image.height}
+            {image.size && ` • ${Math.round(image.size / 1024)}KB`}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const images = input.value || [];
+  const currentFolderPath = getCurrentFolderPath();
 
   return (
     <div className="space-y-4">
@@ -294,127 +455,189 @@ const GalleryManager = ({ field, input, form }: any) => {
         <button
           type="button"
           onClick={() => {
-            const path = getFolderPath()
-            if (path) {
-              setLastScannedFolder('')
-              scanFolder(path)
+            if (manualPath) {
+              setLastScannedFolder("");
+              scanFolder(manualPath);
             }
           }}
           className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-          disabled={loading}
+          disabled={loading || !manualPath}
         >
-          {loading ? 'Scanning...' : 'Rescan Folder'}
+          {loading ? "Loading from ImageKit..." : "Rescan ImageKit Folder"}
         </button>
       </div>
 
-      <div className="flex gap-2">
-        <input
-          type="text"
-          placeholder="Enter folder path manually (e.g., uploads/placeholder)"
-          value={manualPath}
-          onChange={(e) => setManualPath(e.target.value)}
-          className="flex-1 px-2 py-1 border rounded text-sm"
-        />
-        <button
-          type="button"
-          onClick={() => {
-            if (manualPath) {
-              setLastScannedFolder('')
-              scanFolder(manualPath)
-            }
-          }}
-          className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
-          disabled={loading || !manualPath}
-        >
-          Scan Manual Path
-        </button>
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">
+          ImageKit Folder Path
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="e.g., gallery/2024, products/featured"
+            value={manualPath}
+            onChange={(e) => setManualPath(e.target.value)}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (manualPath) {
+                setLastScannedFolder("");
+                scanFolder(manualPath);
+              }
+            }}
+            className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            disabled={loading || !manualPath}
+          >
+            Scan Folder
+          </button>
+        </div>
+        {currentFolderPath && (
+          <p className="text-sm text-gray-600">
+            Currently loaded:{" "}
+            <span className="font-mono">/{currentFolderPath}</span>
+          </p>
+        )}
       </div>
 
       {lastScannedFolder && (
-        <p className="text-sm text-gray-600">
-          Last scanned: {lastScannedFolder} · Drag images to reorder or type position number
-        </p>
+        <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md border">
+          📁 <strong>Active folder:</strong> /{lastScannedFolder}
+          <br />
+          💡 <em>Drag images to reorder or type position number</em>
+          {availableImages.length > 0 && (
+            <span className="ml-2 text-green-600">
+              • Found {availableImages.length} images
+            </span>
+          )}
+        </div>
       )}
 
       {images.length === 0 && !loading && (
-        <p className="text-gray-500 italic">
-          No images loaded. Enter a folder path above or use the manual input.
-        </p>
+        <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed">
+          <svg
+            className="w-12 h-12 mx-auto mb-2 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2z"
+            />
+          </svg>
+          <p className="font-medium">No images loaded from ImageKit</p>
+          <p className="text-sm">
+            Enter a folder path above to browse your ImageKit media library
+          </p>
+        </div>
       )}
 
       <div className="space-y-2">
         {images.map((image: any, index: number) => (
-          <React.Fragment key={`${image.filename}-${index}`}>
-            {/* Drop zone indicator above each item */}
+          <React.Fragment key={`${image.fileId}-${index}`}>
             <div
               className={`
                 h-1 -my-0.5 rounded transition-all
-                ${dragOverIndex === index && draggedIndex !== null
-                  ? 'bg-blue-500 h-2' 
-                  : 'bg-transparent'
+                ${
+                  dragOverIndex === index && draggedIndex !== null
+                    ? "bg-blue-500 h-2"
+                    : "bg-transparent"
                 }
               `}
             />
-            
+
             <div
               className={`
                 border rounded-lg p-4 bg-white transition-all select-none
-                ${draggedIndex === index ? 'opacity-50 scale-95' : ''}
+                ${draggedIndex === index ? "opacity-50 scale-95" : ""}
+                hover:shadow-sm
               `}
               onDragOver={(e) => handleDragOver(e, index)}
               onDrop={(e) => handleDrop(e, index)}
               onDragLeave={handleDragLeave}
             >
               <div className="flex gap-4">
-                {/* Drag Handle & Order Controls */}
                 <div className="flex items-center gap-2">
-                  <div 
+                  <div
                     className="flex flex-col items-center justify-center gap-1 cursor-move hover:bg-gray-100 rounded p-1"
                     draggable
                     onDragStart={(e) => handleDragStart(e, index)}
                     onDragEnd={handleDragEnd}
                   >
-                    <svg className="w-5 h-5 text-gray-400 pointer-events-none" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M7 2a2 2 0 11-4 0 2 2 0 014 0zM7 6a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0zM15 2a2 2 0 11-4 0 2 2 0 014 0zM15 6a2 2 0 11-4 0 2 2 0 014 0zM15 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    <svg
+                      className="w-5 h-5 text-gray-400 pointer-events-none"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M7 2a2 2 0 11-4 0 2 2 0 014 0zM7 6a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0zM15 2a2 2 0 11-4 0 2 2 0 014 0zM15 6a2 2 0 11-4 0 2 2 0 014 0zM15 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                     <div className="flex flex-col gap-1">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          moveImage(index, 'up')
+                          moveImage(index, "up");
                         }}
                         disabled={index === 0}
                         className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30"
                         title="Move up"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 15l7-7 7 7"
+                          />
                         </svg>
                       </button>
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          moveImage(index, 'down')
+                          moveImage(index, "down");
                         }}
                         disabled={index === images.length - 1}
                         className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30"
                         title="Move down"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
                         </svg>
                       </button>
                     </div>
                   </div>
 
-                  {/* Position Number Input */}
                   <div className="flex flex-col items-center">
                     <input
                       type="text"
-                      value={orderInputs[index] !== undefined ? orderInputs[index] : index + 1}
-                      onChange={(e) => handleOrderInputChange(index, e.target.value)}
+                      value={
+                        orderInputs[index] !== undefined
+                          ? orderInputs[index]
+                          : index + 1
+                      }
+                      onChange={(e) =>
+                        handleOrderInputChange(index, e.target.value)
+                      }
                       onBlur={() => handleOrderInputBlur(index)}
                       onKeyDown={(e) => handleOrderInputKeyDown(e, index)}
                       onFocus={(e) => e.target.select()}
@@ -422,81 +645,77 @@ const GalleryManager = ({ field, input, form }: any) => {
                       title="Type position number and press Enter"
                       placeholder={(index + 1).toString()}
                     />
-                    <span className="text-xs text-gray-400 mt-0.5">#{index + 1}</span>
+                    <span className="text-xs text-gray-400 mt-0.5">
+                      #{index + 1}
+                    </span>
                   </div>
                 </div>
 
-                {/* Image Preview */}
-                <div className="flex-shrink-0">
-                  <img
-                    src={image.path}
-                    alt={image.alt || image.filename}
-                    className="w-24 h-24 object-cover rounded border"
-                    onError={(e: any) => {
-                      e.currentTarget.style.display = 'none'
-                    }}
-                  />
-                </div>
+                <ImagePreview image={image} index={index} />
 
-                {/* Caption Fields */}
                 <div className="flex-grow space-y-2">
-                  <div className="font-medium text-sm text-gray-700">
-                    {image.filename}
+                  <div className="flex items-center gap-2">
+                    <div className="font-medium text-sm text-gray-700 flex-1">
+                      {image.filename}
+                    </div>
+                    <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                      {image.width}×{image.height}
+                      {image.size && ` • ${Math.round(image.size / 1024)}KB`}
+                    </div>
                   </div>
 
-                  <div className="flex flex-col">
-                  <input
-                    type="text"
-                    placeholder="Caption"
-                    value={image.caption || ''}
-                    onChange={(e) => updateCaption(index, 'caption', e.target.value)}
-                    className="w-full px-2 py-1 border border-solid border-gray-300 rounded text-sm"
-                  />
-                  
-                  {/* <input
-                    type="text"
-                    placeholder="Alt text (for accessibility)"
-                    value={image.alt || ''}
-                    onChange={(e) => updateCaption(index, 'alt', e.target.value)}
-                    className="w-full px-2 py-1 border border-solid border-gray-300 rounded text-sm"
-                  /> */}
-                  
-                  {/* <input
-                    type="text"
-                    placeholder="Tags (comma separated)"
-                    value={tagInputs[index] !== undefined ? tagInputs[index] : (image.tags || []).join(', ')}
-                    onChange={(e) => handleTagChange(index, e.target.value)}
-                    onBlur={() => handleTagBlur(index)}
-                    className="w-full px-2 py-1 border border-solid border-gray-300 rounded text-sm"
-                  /> */}
+                  <div className="flex flex-col gap-2">
+                    <input
+                      type="text"
+                      placeholder="Caption"
+                      value={image.caption || ""}
+                      onChange={(e) =>
+                        updateCaption(index, "caption", e.target.value)
+                      }
+                      className="w-full px-2 py-1 border border-solid border-gray-300 rounded text-sm"
+                    />
 
+                    {process.env.NODE_ENV === "development" && (
+                      <div className="text-xs text-gray-400 font-mono">
+                        ID: {image.fileId} | Folder: {image.folderPath}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Remove Button */}
                 <button
                   type="button"
                   onClick={() => removeImage(index)}
                   className="flex-shrink-0 text-red-500 hover:text-red-700"
                   title="Remove from gallery"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
             </div>
           </React.Fragment>
         ))}
-        
-        {/* Final drop zone at the bottom */}
+
         {draggedIndex !== null && (
           <div
             className={`
               h-1 rounded transition-all
-              ${dragOverIndex === images.length 
-                ? 'bg-blue-500 h-2' 
-                : 'bg-transparent'
+              ${
+                dragOverIndex === images.length
+                  ? "bg-blue-500 h-2"
+                  : "bg-transparent"
               }
             `}
             onDragOver={(e) => handleDragOver(e, images.length)}
@@ -504,8 +723,17 @@ const GalleryManager = ({ field, input, form }: any) => {
           />
         )}
       </div>
-    </div>
-  )
-}
 
-export default GalleryManager
+      {loading && (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <span className="ml-2 text-gray-600">
+            Loading images from ImageKit...
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default GalleryManager;
