@@ -163,47 +163,47 @@ const scanFolder = async (folder: string) => {
 
       console.log(`Switched to new folder "${cleanFolder}" - loaded ${processedImages.length} images`);
     } else {
-      // Same folder: sync images (add new, remove deleted)
-      const currentFileIds = new Set(
-        currentCaptions.map((cap: any) => cap.fileId).filter(Boolean)
-      );
-      
+      // Same folder: sync images (add new, remove deleted) while preserving order
       const availableFileIds = new Set(
         processedImages.map((img: any) => img.fileId)
       );
 
       console.log("DEBUG - Current images count:", currentCaptions.length);
       console.log("DEBUG - Available images count:", processedImages.length);
-      console.log("DEBUG - Current fileIds:", Array.from(currentFileIds));
+      console.log("DEBUG - Current fileIds:", currentCaptions.map((cap: any) => cap.fileId));
       console.log("DEBUG - Available fileIds:", Array.from(availableFileIds));
 
-      // Find images to remove (exist in current but not in available)
+      // Keep existing images that still exist in the folder, preserving their order
+      const existingImages = currentCaptions.filter(
+        (cap: any) => cap.fileId && availableFileIds.has(cap.fileId)
+      );
+
+      // Find images that were removed
       const imagesToRemove = currentCaptions.filter(
         (cap: any) => cap.fileId && !availableFileIds.has(cap.fileId)
       );
 
       // Find new images to add (exist in available but not in current)
+      const currentFileIds = new Set(
+        currentCaptions.map((cap: any) => cap.fileId).filter(Boolean)
+      );
+      
       const newImages = processedImages.filter(
         (img: any) => !currentFileIds.has(img.fileId)
-      );
-
-      // Keep existing images that still exist in the folder (must have fileId and be in available)
-      const existingImages = currentCaptions.filter(
-        (cap: any) => cap.fileId && availableFileIds.has(cap.fileId)
       );
 
       console.log("DEBUG - Images to remove:", imagesToRemove.length);
       console.log("DEBUG - New images to add:", newImages.length);
       console.log("DEBUG - Existing images to keep:", existingImages.length);
 
-      // Create the final list: existing images (that still exist) + new images
+      // Create the final list: existing images in their original order + new images at the end
       const updatedCaptions = [
-        // Update existing images with folder path (preserve captions/metadata)
+        // Keep existing images in their original order, just update folderPath
         ...existingImages.map(img => ({
           ...img,
           folderPath: cleanFolder
         })),
-        // Add new images
+        // Append new images to the end
         ...newImages.map((img: any) => ({
           filename: img.filename,
           path: img.path,
@@ -236,7 +236,7 @@ const scanFolder = async (folder: string) => {
           imagesToRemove.map(img => img.filename));
       }
       if (newImages.length > 0) {
-        console.log(`Added ${newImages.length} new images:`, 
+        console.log(`Added ${newImages.length} new images to the end:`, 
           newImages.map(img => img.filename));
       }
       if (imagesToRemove.length === 0 && newImages.length === 0) {
@@ -811,7 +811,7 @@ const scanFolder = async (folder: string) => {
           <span className="ml-2 text-gray-600">
             Loading images from ImageKit...
           </span>
-        </div>
+          </div>
       )}
     </div>
   );
