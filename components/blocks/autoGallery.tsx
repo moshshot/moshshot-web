@@ -174,8 +174,6 @@ export const AutoGallery = ({ data }: any) => {
     return null;
   }
 
-  console.log(10101, { galleryImages });
-
   const imageElements = galleryImages.map((image: any, index: number) => (
     <div
       key={image.filename || index}

@@ -8,6 +8,10 @@
       {
         "href": "photography",
         "label": "Photography"
+      },
+      {
+        "href": "review",
+        "label": "Reviews"
       }
     ]
   },

@@ -560,7 +560,7 @@ const scanFolder = async (folder: string) => {
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">
-          ImageKit Folder Path
+          ImageKit Folder Path <span style={{opacity: 0.7}}>(e.g Photography/MacSaturn2025)</span>
         </label>
         <div className="flex gap-2">
           <input
