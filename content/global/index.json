@@ -6,16 +6,16 @@
     "color": "default",
     "nav": [
       {
-        "href": "about",
-        "label": "Contact"
-      },
-      {
         "href": "photography",
         "label": "Photography"
       },
       {
         "href": "review",
         "label": "Reviews"
+      },
+      {
+        "href": "about",
+        "label": "Contact"
       }
     ]
   },
