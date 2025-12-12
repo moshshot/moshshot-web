@@ -67,7 +67,7 @@ export default function ReviewsClientPage(props: ClientReviewProps) {
               return (
                 <Card
                   key={review.id}
-                  className="order-last border-1 rounded-md p-4 bg-transparent shadow-none sm:order-first col-span-12 cursor-pointer hover:bg-white/2 transition-all"
+                  className="order-last border-1 rounded-md p-4 bg-transparent shadow-none sm:order-first col-span-12 cursor-pointer hover:bg-white/2 transition-all w-full md:max-w-250"
                   onClick={() => handleClick(review.url)}
                 >
                   <div className="flex flex-row gap-4">
@@ -96,7 +96,7 @@ export default function ReviewsClientPage(props: ClientReviewProps) {
                     </div>
 
                     <div className="flex-8 flex flex-col justify-center">
-                      <h3 className="text-2xl font-semibold md:text-3xl lg:text-5xl capitalize">
+                      <h3 className="text-md font-semibold md:text-3xl lg:text-3xl capitalize">
                         <Link href={review.url} className="hover:underline">
                           {review.title}{" "}
                           <span className="font-light">
@@ -104,7 +104,7 @@ export default function ReviewsClientPage(props: ClientReviewProps) {
                           </span>
                         </Link>
                       </h3>
-                      <p>
+                      <p className="text-sm md:text-md capitalize">
                         {review?.subtext || ""}
                       </p>
                     </div>
